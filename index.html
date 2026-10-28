@@ -16,8 +16,8 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 .ac-work .hint{margin-left:auto;font-size:12px;color:#666;font-weight:500;flex-shrink:0}
 .ac-context-hint{grid-area:w;margin-top:-8px;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;line-height:1.5;display:flex;align-items:center;gap:10px}
 .ac-context-hint.draft{background:#fff3cd;border:1px solid #ffeeba;color:#856404}
-.ac-context-hint.editing{background:#cfe2ff;border:1px solid #b6d4fe;color:#084298}
-.ac-context-hint.saved{background:#d1e7dd;border:1px solid #badbcc;color:#0f5132}
+.ac-context-hint.editing{background:#cfe2ff;color:#084298;border:1px solid #b6d4fe}
+.ac-context-hint.saved{background:#d1e7dd;color:#0f5132;border:1px solid #badbcc}
 .ac-context-hint .ic{font-size:18px;flex-shrink:0}
 .ac-title{grid-area:t;font-size:20px;font-weight:800;color:#1a1a2e;padding-bottom:14px;border-bottom:2px solid #d32f2f;display:flex;align-items:center;gap:12px}
 .ac-title .lg{flex-shrink:0;width:38px;height:38px}
@@ -1429,71 +1429,56 @@ async function openKpPageViaWorker(){
       };
     });
 
-    const payload={
-      v:2,
-      rows:rows,
-      rooms:rooms,
-      company:{name:'ООО «ВК ТЕРМ»',address:'РБ, 223051, Минская обл., Минский р-н, аг. Колодищи, ул. Минская, д. 5, пом. 107-4',phone:'+375 (44) 752-70-73',email:'7527073@armstrong.by',site:'cubica.by',site2:'armstrong.by',unp:'191202287',account:'BY79MTBK30120001093300125719',bank:'ЗАО «МТБанк», г. Минск',bic:'MTBKBY22',director:'Креминский И. Ю.',directorPosition:'Директор',tagline:'modern ceiling solutions',issueAddress:'аг. Колодищи, ул. Минская, 5, этаж 5, офис 508',pickupAddress:'аг. Колодищи, территория учебного парка',hours:'Пн–Пт, 09:00–15:00'},
-      meta:{
-        L_in:currentLayout.L_in,
-        W_in:currentLayout.W_in,
-        area:currentLayout.areaM2,
-        polygon:currentLayout.polygon||null
+    const payload = {
+      v: 2,
+      type: 'armstrong',
+      rows: rows,
+      rooms: rooms,
+      company: {
+        name: 'ООО «ВК ТЕРМ»',
+        address: 'РБ, 223051, Минская обл., Минский р-н, аг. Колодищи, ул. Минская, д. 5, пом. 107-4',
+        phone: '+375 (44) 752-70-73',
+        email: '7527073@armstrong.by',
+        site: 'cubica.by',
+        site2: 'armstrong.by',
+        unp: '191202287',
+        account: 'BY79MTBK30120001093300125719',
+        bank: 'ЗАО «МТБанк», г. Минск',
+        bic: 'MTBKBY22',
+        director: 'Креминский И. Ю.',
+        directorPosition: 'Директор',
+        tagline: 'modern ceiling solutions',
+        issueAddress: 'аг. Колодищи, ул. Минская, 5, этаж 5, офис 508',
+        pickupAddress: 'аг. Колодищи, территория учебного парка',
+        hours: 'Пн–Пт, 09:00–15:00'
+      },
+      meta: {
+        L_in: currentLayout.L_in,
+        W_in: currentLayout.W_in,
+        area: currentLayout.areaM2,
+        polygon: currentLayout.polygon || null
       }
     };
     
     if(JID && window.CubicaJournal){
       const rec = window.CubicaJournal.get(JID);
       if(rec){
-        // 1. Передаем помещения (rooms) как есть
+        rec.type = 'armstrong'; 
         rec.rooms = rooms;
+        rec.rows = rows.map(function(newR){
+          return {
+            label: newR.label,
+            qtyCalc: Number(newR.qty) || 0,
+            qtyReserve: 0,
+            unit: newR.unit || 'шт.',
+            price: 0
+          };
+        });
         rec.meta = payload.meta;
-        
-        // 2. Сохраняем старые цены, если они были
-        var oldRows = Array.isArray(rec.rows) ? rec.rows : [];
-        var oldMap = {};
-        oldRows.forEach(function(oldR){
-          if(oldR && oldR.label){
-            oldMap[oldR.label] = {
-              price: Number(oldR.price) || 0,
-              qtyReserve: Number(oldR.qtyReserve) || 0
-            };
-          }
-        });
-        
-        // ★ ДЕЛАЕМ КАК В КУБОТЕ: упаковываем строки внутрь помещений
-        if (Array.isArray(rooms)) {
-          rooms.forEach(function(room) {
-            // Для каждой строки в помещении добавляем qtyCalc и price
-            room.rows = (room.rows || []).map(function(r) {
-              var oldInfo = oldMap[r.label] || { price: 0, qtyReserve: 0 };
-              return {
-                label: r.label,
-                qty: r.qty, // Это количество из спецификации
-                qtyCalc: r.qty, // Дублируем в qtyCalc для надежности
-                qtyReserve: oldInfo.qtyReserve,
-                unit: r.unit || 'шт.',
-                price: oldInfo.price
-              };
-            });
-          });
-        }
-        
-        // Очищаем общий rec.rows, чтобы journal-core не дублировал
-        rec.rows = [];
-        
-        rec.history = rec.history || [];
-        rec.history.push({
-          at: window.CubicaJournal.nowISO(),
-          by: window.CubicaJournal.manager(),
-          action: 'from calculator (armstrong)'
-        });
-        
-        // 4. Сохраняем и открываем i5
+
         window.CubicaJournal.save(rec, {assignNumber:false});
         const i5url = window.CubicaJournal.i5UrlForRecord(rec);
         window.open(i5url, '_blank');
-        
         try{ window.close(); }catch(e){}
         setTimeout(function(){ if(!document.hidden) showToast('Готово! Эту вкладку можно закрыть', '#1565c0'); }, 500);
         return;
@@ -1517,11 +1502,7 @@ async function openKpPageViaWorker(){
     
   } catch (e) {
     console.error('Ошибка Worker:', e);
-    alert('Не удалось создать короткую ссылку: ' + e.message + '\nПопробуем длинную...');
-    const data = b64enc(JSON.stringify(payload));
-    const url = KP_URL + (KP_URL.includes('?') ? '&' : '?') + 'data=' + data;
-    if (url.length > 8000 && !confirm('Ссылка очень длинная (может не открыться). Продолжить?')) return;
-    window.open(url, '_blank');
+    alert('Не удалось сформировать счёт: ' + e.message);
   } finally {
     btn.textContent = oldText;
     btn.disabled = false;
