@@ -6,7 +6,7 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;background:#f4f5f7;line-height:1.6;padding:24px 20px 40px}
-.ac{max-width:1280px;margin:0 auto;padding:24px;border:1px solid #e6e6e6;border-radius:12px;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.05);display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"w w" "t t" "i i" "s s" "l p";gap:16px;align-items:start}
+.ac{max-width:1280px;margin:0 auto;padding:24px;border:1px solid #e6e6e6;border-radius:12px;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.05);display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"w w" "t t" "i i" "s s" "o o" "l p";gap:16px;align-items:start}
 .ac-work{grid-area:w;position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:12px;padding:12px 18px;background:#fff;border:2px solid #cfdcec;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.12);transition:all .3s}
 .ac-work .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
 .ac-work .badge.draft{background:#fff3cd;color:#856404;border:1px solid #ffeeba}
@@ -29,8 +29,15 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 .ac-in button:hover:not(:disabled){filter:brightness(1.1)}
 .ac-in button:disabled{opacity:.5;cursor:not-allowed}
 .ac-in button.add{background:#2e7d32}.ac-in button.draw{background:#6a1b9a}.ac-in button.upd{background:#1565c0}.ac-in button.rst{background:#777}.ac-in button.kp{background:#c00000}
-
-/* Сетка для ползунков как в оригинале */
+.ac-options-row{grid-area:o;display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 16px;background:#fafafa;border:1px solid #eee;border-radius:8px}
+.ac-options-row .ac-colors-title{margin-right:6px;flex-shrink:0;font-size:10px;font-weight:700;color:#9aa1ac;letter-spacing:.8px;text-transform:uppercase}
+.ac-chk-inline{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:6px;font-size:12.5px;color:#444;cursor:pointer;padding:8px 12px;border:1px solid #ccc;border-radius:6px;background:#fff;user-select:none;height:36px}
+.ac-chk-inline input{accent-color:#d32f2f;margin:0}
+.ac-hanger-slider{padding:6px 12px;background:#fff;border:1px solid #eee;border-radius:6px;display:flex;align-items:center;gap:10px;transition:opacity .2s;min-width:200px;flex:1 1 260px;max-width:340px}
+.ac-hanger-slider.disabled{opacity:.45;pointer-events:none}
+.ac-hanger-slider .ac-slider-head{font-size:10px;margin-bottom:0;flex:0 0 auto;display:flex;align-items:center;font-weight:700;color:#9aa1ac;letter-spacing:.8px;text-transform:uppercase}
+.ac-hanger-slider input[type=range]{flex:1;height:22px;cursor:pointer;accent-color:#d32f2f}
+.ac-hanger-slider .ac-slider-val{font-size:12.5px;min-width:52px;text-align:right;color:#1a1a2e;font-weight:700;white-space:nowrap}
 .ac-lw{grid-area:l;display:grid;grid-template-rows:auto 1fr auto;gap:14px;min-width:0}
 .ac-ts,.ac-bs{display:flex;align-items:center;gap:14px;padding:12px 16px;background:#fafafa;border:1px solid #eee;border-radius:8px}
 .ac-ts label,.ac-bs label{font-size:13px;color:#555;font-weight:600;min-width:200px}
@@ -49,7 +56,6 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 .ac-cb-btn{padding:7px 14px;font-size:12px;font-weight:600;border:1px solid #ddd;background:#fff;color:#333;border-radius:8px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap}
 .ac-cb-btn:hover{background:#f5f5f5}
 .ac-cb-btn.active{background:#d32f2f;color:#fff;border-color:#d32f2f}
-
 .ac-lay{text-align:center;margin-bottom:14px}
 .ac-lay svg{max-width:100%;height:auto;display:block;margin:0 auto;border-radius:8px}
 .ac-l3{position:relative;margin-bottom:14px}
@@ -60,7 +66,6 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 .ac-cb{padding:6px 12px;font-size:12px;font-weight:600;border:1px solid #ddd;background:#fff;color:#333;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap}
 .ac-cb.pr{background:#c00000;color:#fff;border-color:#c00000}
 .ac-hint{text-align:center;font-size:11.5px;color:#999;margin-top:8px}
-
 .ac-pn{grid-area:p;background:#fafafa;border:1px solid #eee;border-radius:10px;padding:18px 20px;align-self:start;position:sticky;top:20px;max-height:calc(100vh - 40px);overflow-y:auto}
 .ac-ph{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:2px solid #d32f2f;padding-bottom:10px;margin-bottom:14px}
 .ac-pt{margin:0;font-size:13px;font-weight:800;color:#1a1a2e;text-transform:uppercase;letter-spacing:1px}
@@ -131,7 +136,7 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 .ac-toast{position:fixed;left:50%;top:24px;transform:translateX(-50%);background:#2e7d32;color:#fff;padding:14px 26px;border-radius:10px;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:3000;display:none;font-family:'Segoe UI',Roboto,Arial,sans-serif;max-width:90vw;text-align:center}
 .ac-toast.show{display:block;animation:acToastIn .3s ease-out}
 @keyframes acToastIn{from{transform:translateX(-50%) translateY(-30px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
-@media(max-width:1024px){.ac{grid-template-columns:1fr;grid-template-areas:"w" "t" "i" "s" "l" "p"}.ac-pn{position:static;max-height:none}.ac-ts label,.ac-bs label{min-width:auto}.ac-val{min-width:auto}}
+@media(max-width:1024px){.ac{grid-template-columns:1fr;grid-template-areas:"w" "t" "i" "s" "o" "l" "p"}.ac-pn{position:static;max-height:none}.ac-ts label,.ac-bs label{min-width:auto}.ac-val{min-width:auto}}
 @media(max-width:700px){.ac-draw-body{flex-direction:column}.ac-draw-wrap{width:100%;align-self:stretch}.ac-seg-list{flex:0 0 auto;width:100%;max-height:180px}}
 @media(max-width:640px){.ac{padding:16px}.ac-mr{grid-template-columns:60px minmax(0,1fr)}.ac-ts,.ac-bs{flex-wrap:wrap}.ac-ts label,.ac-bs label{min-width:100%}.ac-in input[type=number]{width:100%}.ac-in button{margin-left:0}.ac-modal{padding:8px}.ac-modal-inner{padding:14px}}
 </style></head><body>
@@ -152,6 +157,15 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 <button type="button" class="kp" id="ac-kp-open">📤 Коммерческое предложение</button>
 <button type="button" class="rst" id="ac-reset">↺ Отменить изменения</button>
 </div>
+<div class="ac-options-row">
+<div class="ac-colors-title">Опции</div>
+<label class="ac-chk-inline"><input type="checkbox" id="ac-hangers" checked> Подвесы</label>
+<div class="ac-hanger-slider" id="ac-hanger-slider-wrap">
+<div class="ac-slider-head"><span>Высота</span></div>
+<input type="range" id="ac-hanger-h" min="0" max="3" step="0.01" value="0">
+<span class="ac-slider-val" id="ac-hanger-h-val">0,00 м</span>
+</div>
+</div>
 <div class="ac-lw">
 <div class="ac-ts"><label>Смещение влево-вправо (← →)</label><input type="range" id="ac-offset-x" min="-1200" max="1200" step="50" value="0"><span class="ac-val" id="ac-offset-x-val">0 мм</span></div>
 <div class="ac-mr">
@@ -167,8 +181,7 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 <div class="ac-lay" id="ac-layout"></div>
 <div class="ac-l3" id="ac-layout3d" style="display:none;"><canvas id="ac-canvas3d" width="640" height="440"></canvas></div>
 <div class="ac-tb">
-<label class="ac-chk"><input type="checkbox" id="ac-show-tiles"> Плиты</label>
-<label class="ac-chk"><input type="checkbox" id="ac-show-hangers" checked> Подвесы</label>
+<label class="ac-chk"><input type="checkbox" id="ac-show-tiles" checked> Плиты</label>
 <label class="ac-chk"><input type="checkbox" id="ac-show-ceiling"> Перекрытие</label>
 <button type="button" class="ac-cb" id="ac-cam-reset">⟲ Камера</button>
 <button type="button" class="ac-cb pr" id="ac-save-2d">📄 2D (PDF)</button>
@@ -245,7 +258,8 @@ const resultsDiv=$('ac-results'),layout2dDiv=$('ac-layout'),layout3dDiv=$('ac-la
 const toggleBtns=document.querySelectorAll('.ac-vt button');
 const rotate90Btn=$('ac-rotate90'),standardBtn=$('ac-standard');
 const camResetBtn=$('ac-cam-reset'),save2dBtn=$('ac-save-2d'),save3dBtn=$('ac-save-3d');
-const showTilesChk=$('ac-show-tiles'),showHangersChk=$('ac-show-hangers'),showCeilingChk=$('ac-show-ceiling');
+const showTilesChk=$('ac-show-tiles'),showCeilingChk=$('ac-show-ceiling');
+const hangersChk=$('ac-hangers'),hangerHInput=$('ac-hanger-h'),hangerHVal=$('ac-hanger-h-val'),hangerSliderWrap=$('ac-hanger-slider-wrap');
 const specToggleEl=$('ac-spec-toggle');
 const projectListEl=$('ac-project-list'),projectCountEl=$('ac-project-count'),projectClearBtn=$('ac-project-clear');
 
@@ -315,55 +329,33 @@ function updateWorkLabel(){
   const contextHint=$('ac-context-hint'),contextText=$('ac-context-text');
   if(!badge||!nameEl)return;
 
-  let mode, badgeText, badgeClass, name, hint, contextTextContent, contextClass, contextIcon;
-
   if(activeRoomIndex === null){
-    mode = 'draft';
-    badgeText = '🟡 ЧЕРНОВИК';
-    badgeClass = 'badge draft';
-    name = 'Новое помещение (не сохранено)';
-    hint = 'Ещё не в проекте';
-    contextIcon = '💡';
-    contextTextContent = 'Это <b>новое помещение</b>. Нажмите «💾 Сохранить изменения», чтобы добавить его к другим.';
-    contextClass = 'ac-context-hint draft';
+    badge.textContent = '🟡 ЧЕРНОВИК'; badge.className = 'badge draft';
+    nameEl.textContent = 'Новое помещение (не сохранено)'; hintEl.textContent = 'Ещё не в проекте';
+    contextHint.className = 'ac-context-hint draft';
+    contextText.innerHTML = 'Это <b>новое помещение</b>. Нажмите «💾 Сохранить изменения», чтобы добавить его к другим.';
+    contextHint.querySelector('.ic').textContent = '💡';
   } else if(hasUnsavedChanges()){
-    mode = 'editing';
-    badgeText = '🔵 РЕДАКТИРОВАНИЕ';
-    badgeClass = 'badge editing';
-    name = project[activeRoomIndex].name;
-    hint = '⚠ есть несохранённые изменения';
-    contextIcon = '✏️';
-    contextTextContent = 'Вы редактируете <b>' + escapeHtml(project[activeRoomIndex].name) + '</b>. Изменения ещё не сохранены. Нажмите «💾 Сохранить изменения» или «+ Новое помещение» (сохранит и создаст новое).';
-    contextClass = 'ac-context-hint editing';
+    badge.textContent = '🔵 РЕДАКТИРОВАНИЕ'; badge.className = 'badge editing';
+    nameEl.textContent = project[activeRoomIndex].name; hintEl.textContent = '⚠ есть несохранённые изменения';
+    contextHint.className = 'ac-context-hint editing';
+    contextText.innerHTML = 'Вы редактируете <b>' + escapeHtml(project[activeRoomIndex].name) + '</b>. Изменения ещё не сохранены. Нажмите «💾 Сохранить изменения» или «+ Новое помещение» (сохранит и создаст новое).';
+    contextHint.querySelector('.ic').textContent = '✏️';
   } else {
-    mode = 'saved';
-    badgeText = '🟢 СОХРАНЕНО';
-    badgeClass = 'badge saved';
-    name = project[activeRoomIndex].name;
-    hint = 'Всё сохранено';
-    contextIcon = '✓';
-    contextTextContent = 'Вы редактируете <b>' + escapeHtml(project[activeRoomIndex].name) + '</b>. Все изменения сохранены. Нажмите «+ Новое помещение», чтобы создать следующее.';
-    contextClass = 'ac-context-hint saved';
+    badge.textContent = '🟢 СОХРАНЕНО'; badge.className = 'badge saved';
+    nameEl.textContent = project[activeRoomIndex].name; hintEl.textContent = 'Всё сохранено';
+    contextHint.className = 'ac-context-hint saved';
+    contextText.innerHTML = 'Вы редактируете <b>' + escapeHtml(project[activeRoomIndex].name) + '</b>. Все изменения сохранены. Нажмите «+ Новое помещение», чтобы создать следующее.';
+    contextHint.querySelector('.ic').textContent = '✓';
   }
-
-  badge.textContent = badgeText;
-  badge.className = badgeClass;
-  nameEl.textContent = name;
-  hintEl.textContent = hint;
-  contextText.innerHTML = contextTextContent;
-  contextHint.className = contextClass;
-  contextHint.querySelector('.ic').textContent = contextIcon;
 
   const hasChanges = hasUnsavedChanges();
   if(updateBtn){
     updateBtn.style.display = '';
     updateBtn.disabled = !hasChanges;
     updateBtn.style.opacity = hasChanges ? '1' : '0.5';
-    if (activeRoomIndex === null) {
-      updateBtn.textContent = '💾 Добавить в проект';
-    } else {
-      updateBtn.textContent = '💾 Сохранить изменения';
-    }
+    if (activeRoomIndex === null) updateBtn.textContent = '💾 Добавить в проект';
+    else updateBtn.textContent = '💾 Сохранить изменения';
   }
   if(addBtn){
     addBtn.disabled = hasChanges;
@@ -371,12 +363,19 @@ function updateWorkLabel(){
   }
 }
 
+function syncHangerUI(){
+  const on = !!hangersChk.checked;
+  hangerHInput.disabled = !on;
+  hangerSliderWrap.classList.toggle('disabled', !on);
+  const v = parseFloat(hangerHInput.value) || 0;
+  hangerHVal.textContent = v.toFixed(2).replace('.', ',') + ' м';
+}
+
 function resetForNewRoom(){
   const savedOffsetX = offsetXSlider.value;
   const savedOffsetY = offsetYSlider.value;
   const savedRotation = rotationSlider.value;
   const savedStandard = standardMode;
-  const savedHangers = showHangersChk.checked;
 
   lengthInput.value=7350;
   widthInput.value=5600;
@@ -387,7 +386,6 @@ function resetForNewRoom(){
   standardBtn.classList.toggle('active',standardMode);
   rotated90=false;
   rotate90Btn.classList.remove('active');
-  showHangersChk.checked = savedHangers;
   updateLabels();
 
   roomPolygon=null;
@@ -765,7 +763,8 @@ const wallAnglePieces=Math.ceil(perimeter/3000);
 const angleFasteners=Math.ceil(perimeter/ANGLE_WALL_SPACING);
 
 // ===== ПОДВЕСЫ И КРЕПЕЖ =====
-const needHangers = showHangersChk.checked;
+const isHangers = !!hangersChk.checked;
+const hangerHeight = parseFloat(hangerHInput.value) || 0;
 
 const specRows=[
 {label:'Площадь',value:areaM2.toFixed(2)+' м²',num:areaM2,kind:'area'},
@@ -776,10 +775,43 @@ const specRows=[
 {label:'Уголок пристеночный 19х19 (3м) белый',value:wallAnglePieces+' шт.',num:wallAnglePieces,kind:'count'}
 ];
 
-if(needHangers){
+if (isHangers) {
+  if (hangerHeight < 0.50) {
+    specRows.push({label:'Европодвес 500 мм', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+  } else if (hangerHeight < 0.70) {
+    specRows.push({label:'Тяга-крюк 250 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Тяга-петля 350 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+  } else if (hangerHeight < 1.00) {
+    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Тяга-петля 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+  } else if (hangerHeight < 1.30) {
+    specRows.push({label:'Тяга-крюк 350 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+  } else if (hangerHeight < 1.50) {
+    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+  } else if (hangerHeight < 2.00) {
+    specRows.push({label:'Тяга-крюк 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+  } else if (hangerHeight < 2.50) {
+    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count'});
+  } else {
+    specRows.push({label:'Тяга-крюк 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count'});
+  }
+}
+
+// Анкеры и дюбели есть ВСЕГДА (не зависят от галочки подвесов)
 specRows.push({label:'Анкерный болт с полукольцом М8х40 (100 шт.)',value:totalHangers+' шт.',num:totalHangers,kind:'count'});
 specRows.push({label:'Дюбель-гвоздь SM-G 6x40 (3600/200шт.)',value:'≈ '+angleFasteners+' шт.',num:angleFasteners,kind:'approx'});
-}
 
 const warnings=[];
 if(lay.n3600<1) warnings.push('⚠ Ни одной несущей — увеличьте ширину помещения или сдвиньте раскладку.');
@@ -933,7 +965,7 @@ const panelM=TILE_PANEL/1000;
 const HANGER_LEN=0.45,HANGER_R=0.003,CEIL_OFFSET=HANGER_LEN+0.05;
 clearGroup(threeRoomGroup);clearGroup(threeGridPivot);
 threeTilesGroup=new THREE.Group();threeTilesGroup.visible=showTilesChk.checked;threeGridPivot.add(threeTilesGroup);
-threeHangersGroup=new THREE.Group();threeHangersGroup.visible=showHangersChk.checked;threeGridPivot.add(threeHangersGroup);
+threeHangersGroup=new THREE.Group();threeHangersGroup.visible=hangersChk.checked;threeGridPivot.add(threeHangersGroup);
 const useClipPlanes=!polygon;
 let clipPlanes=[];
 if(useClipPlanes){
@@ -1299,10 +1331,13 @@ save3dBtn.addEventListener('click',()=>{if(!ensure3D())return;if(currentLayout)u
 
 function applyVisibility(){
 if(threeTilesGroup)threeTilesGroup.visible=showTilesChk.checked;
-if(threeHangersGroup)threeHangersGroup.visible=showHangersChk.checked;
+if(threeHangersGroup)threeHangersGroup.visible=hangersChk.checked;
 if(threeCeilingMesh)threeCeilingMesh.visible=showCeilingChk.checked;
 }
-[showTilesChk,showHangersChk,showCeilingChk].forEach(c=>c.addEventListener('change',()=>{applyVisibility();calculate();}));
+[showTilesChk,showCeilingChk].forEach(c=>c.addEventListener('change',applyVisibility));
+
+hangersChk.addEventListener('change',()=>{syncHangerUI();calculate();});
+hangerHInput.addEventListener('input',()=>{syncHangerUI();calculate();});
 
 // ===== РЕДАКТОР КОНТУРА =====
 const drawModal=$('ac-draw-modal'),drawCanvas=$('ac-draw-canvas'),drawCtx=drawCanvas.getContext('2d');
@@ -1360,15 +1395,13 @@ async function openKpPageViaWorker(){
   btn.disabled = true;
 
   try {
-    let totals = project.length>0 ? computeTotals() : currentLayout.specRows.slice();
+    const totals = project.length>0 ? computeTotals() : currentLayout.specRows;
     const rows=[];
     for(const r of totals){
-      if(!r) continue; 
-      if(r.kind === 'area') continue; // Площадь в счета не передаём
+      if(!r || r.kind==='area') continue;
       const qty = Number(r.num) || 0;
       if(qty <= 0) continue;
-      const label = String(r.label||'');
-      rows.push({label: label, qty: qty, unit: r.unit || 'шт.'});
+      rows.push({label: String(r.label||''), qty: qty, unit: r.unit || 'шт.'});
     }
 
     const srcRooms = project.length>0 ? project : [{name:'Помещение 1',L_in: currentLayout.L_in,W_in: currentLayout.W_in,specRows: currentLayout.specRows,areaM2: currentLayout.areaM2}];
@@ -1387,7 +1420,18 @@ async function openKpPageViaWorker(){
       };
     });
 
-    const payload={v:2,rows:rows,rooms:rooms,company:{name:'ООО «ВК ТЕРМ»',address:'РБ, 223051, Минская обл., Минский р-н, аг. Колодищи, ул. Минская, д. 5, пом. 107-4',phone:'+375 (44) 752-70-73',email:'7527073@armstrong.by',site:'cubica.by',site2:'armstrong.by',unp:'191202287',account:'BY79MTBK30120001093300125719',bank:'ЗАО «МТБанк», г. Минск',bic:'MTBKBY22',director:'Креминский И. Ю.',directorPosition:'Директор',tagline:'modern ceiling solutions',issueAddress:'аг. Колодищи, ул. Минская, 5, этаж 5, офис 508',pickupAddress:'аг. Колодищи, территория учебного парка',hours:'Пн–Пт, 09:00–15:00'},meta:{L_in:currentLayout.L_in,W_in:currentLayout.W_in,area:currentLayout.areaM2,polygon:currentLayout.polygon||null}};
+    const payload={
+      v:2,
+      rows:rows,
+      rooms:rooms,
+      company:{name:'ООО «ВК ТЕРМ»',address:'РБ, 223051, Минская обл., Минский р-н, аг. Колодищи, ул. Минская, д. 5, пом. 107-4',phone:'+375 (44) 752-70-73',email:'7527073@armstrong.by',site:'cubica.by',site2:'armstrong.by',unp:'191202287',account:'BY79MTBK30120001093300125719',bank:'ЗАО «МТБанк», г. Минск',bic:'MTBKBY22',director:'Креминский И. Ю.',directorPosition:'Директор',tagline:'modern ceiling solutions',issueAddress:'аг. Колодищи, ул. Минская, 5, этаж 5, офис 508',pickupAddress:'аг. Колодищи, территория учебного парка',hours:'Пн–Пт, 09:00–15:00'},
+      meta:{
+        L_in:currentLayout.L_in,
+        W_in:currentLayout.W_in,
+        area:currentLayout.areaM2,
+        polygon:currentLayout.polygon||null
+      }
+    };
     
     if(JID && window.CubicaJournal){
       const rec = window.CubicaJournal.get(JID);
@@ -1427,18 +1471,13 @@ async function openKpPageViaWorker(){
         window.CubicaJournal.save(rec, {assignNumber:false});
         const i5url = window.CubicaJournal.i5UrlForRecord(rec);
         window.open(i5url, '_blank');
-try{ window.close(); }catch(e){}
-setTimeout(function(){
-  if(!document.hidden){
-    showToast('Готово! Эту вкладку можно закрыть', '#1565c0');
-  }
-}, 500);
+        try{ window.close(); }catch(e){}
+        setTimeout(function(){ if(!document.hidden) showToast('Готово! Эту вкладку можно закрыть', '#1565c0'); }, 500);
         return;
       }
     }
 
     const data = b64enc(JSON.stringify(payload));
-    
     const res = await fetch(SHORT_URL + '/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1450,27 +1489,16 @@ setTimeout(function(){
     if (!j.id) throw new Error('No id returned');
 
     window.open(KP_URL + '?s=' + j.id, '_blank');
-try{ window.close(); }catch(e){}
-setTimeout(function(){
-  if(!document.hidden){
-    showToast('Готово! Эту вкладку можно закрыть', '#1565c0');
-  }
-}, 500);
+    try{ window.close(); }catch(e){}
+    setTimeout(function(){ if(!document.hidden) showToast('Готово! Эту вкладку можно закрыть', '#1565c0'); }, 500);
     
   } catch (e) {
     console.error('Ошибка Worker:', e);
     alert('Не удалось создать короткую ссылку: ' + e.message + '\nПопробуем длинную...');
-    
     const data = b64enc(JSON.stringify(payload));
     const url = KP_URL + (KP_URL.includes('?') ? '&' : '?') + 'data=' + data;
     if (url.length > 8000 && !confirm('Ссылка очень длинная (может не открыться). Продолжить?')) return;
     window.open(url, '_blank');
-try{ window.close(); }catch(e){}
-setTimeout(function(){
-  if(!document.hidden){
-    showToast('Готово! Эту вкладку можно закрыть', '#1565c0');
-  }
-}, 500);
   } finally {
     btn.textContent = oldText;
     btn.disabled = false;
@@ -1535,6 +1563,7 @@ if(JID && window.CubicaJournal){
   }
 }
 
+syncHangerUI();
 updateLabels();
 renderProjectList();
 updateWorkLabel();
