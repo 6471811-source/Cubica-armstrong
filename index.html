@@ -148,9 +148,9 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 <div class="ac-lay" id="ac-layout"></div>
 <div class="ac-l3" id="ac-layout3d" style="display:none;"><canvas id="ac-canvas3d" width="640" height="440"></canvas></div>
 <div class="ac-tb">
-<label class="ac-chk"><input type="checkbox" id="ac-show-tiles"> Плиты</label>
-<label class="ac-chk"><input type="checkbox" id="ac-show-hangers" checked> Подвесы</label>
-<label class="ac-chk"><input type="checkbox" id="ac-show-ceiling"> Перекрытие</label>
+<label class="ac-chk"><input type="checkbox" id="ac-cb-tiles" checked> Плиты</label>
+<label class="ac-chk"><input type="checkbox" id="ac-cb-hangers" checked> Подвесы</label>
+<label class="ac-chk"><input type="checkbox" id="ac-cb-ceiling"> Перекрытие</label>
 <button type="button" class="ac-cb" id="ac-cam-reset">⟲ Камера</button>
 <button type="button" class="ac-cb pr" id="ac-save-2d">📄 2D (PDF)</button>
 <button type="button" class="ac-cb pr" id="ac-save-3d">📄 3D (PDF)</button>
@@ -183,7 +183,7 @@ const resultsDiv=$('ac-results'),layout2dDiv=$('ac-layout'),layout3dDiv=$('ac-la
 const toggleBtns=document.querySelectorAll('.ac-vt button');
 const rotate90Btn=$('ac-rotate90'),standardBtn=$('ac-standard');
 const camResetBtn=$('ac-cam-reset'),save2dBtn=$('ac-save-2d'),save3dBtn=$('ac-save-3d');
-const showTilesChk=$('ac-show-tiles'),showHangersChk=$('ac-show-hangers'),showCeilingChk=$('ac-show-ceiling');
+const showTilesChk=$('ac-cb-tiles'),showHangersChk=$('ac-cb-hangers'),showCeilingChk=$('ac-cb-ceiling');
 const specToggleEl=$('ac-spec-toggle');
 const projectListEl=$('ac-project-list'),projectCountEl=$('ac-project-count'),projectClearBtn=$('ac-project-clear');
 
@@ -649,6 +649,9 @@ let threeRenderer,threeScene,threeCamera,threeControls;
 let threeRoomGroup,threeGridPivot,threeTilesGroup,threeHangersGroup,threeCeilingMesh;
 let project=[],activeRoomIndex=null,specMode='current';
 
+// Глобальная настройка: нужны ли подвесы
+let needHangers=true;
+
 function calculate(){
 let L_in=parseFloat(lengthInput.value),W_in=parseFloat(widthInput.value);
 if(isNaN(L_in)||isNaN(W_in)||L_in<=0||W_in<=0){
@@ -702,15 +705,17 @@ const angleFasteners=Math.ceil(perimeter/ANGLE_WALL_SPACING);
 
 const specRows=[
 {label:'Площадь',value:areaM2.toFixed(2)+' м²',num:areaM2,kind:'area'},
-{label:'Плиты '+TILE_PANEL+'×'+TILE_PANEL,value:tilesCount+' шт.',num:tilesCount,kind:'count'},
-{label:'Направляющая '+MAIN_LENGTH+' мм',value:nMainPieces+' шт.',num:nMainPieces,kind:'count',color:'#d32f2f'},
-{label:'Направляющая 1200 мм',value:lay.n1200+' шт.',num:lay.n1200,kind:'count',color:'#1976d2'},
-{label:'Направляющая 600 мм',value:lay.n600+' шт.',num:lay.n600,kind:'count',color:'#43a047'},
-{label:'Уголок 3 м',value:wallAnglePieces+' шт.',num:wallAnglePieces,kind:'count'},
-{label:'Подвес',value:totalHangers+' шт.',num:totalHangers,kind:'count'},
-{label:'Анкерный болт',value:totalHangers+' шт.',num:totalHangers,kind:'count'},
-{label:'Дюбель-гвозди для уголка',value:'≈ '+angleFasteners+' шт.',num:angleFasteners,kind:'approx'}
+{label:'Плита потолочная 600х600х12 мм',value:tilesCount+' шт.',num:tilesCount,kind:'count'},
+{label:'Т-профиль 24х33х3600 Премиум белый',value:nMainPieces+' шт.',num:nMainPieces,kind:'count',color:'#d32f2f'},
+{label:'Т-профиль 24х26х1200 белый',value:lay.n1200+' шт.',num:lay.n1200,kind:'count',color:'#1976d2'},
+{label:'Т-профиль 24х20х600 Стандарт белый',value:lay.n600+' шт.',num:lay.n600,kind:'count',color:'#43a047'},
+{label:'Уголок пристеночный 19х19 (3м) белый',value:wallAnglePieces+' шт.',num:wallAnglePieces,kind:'count'}
 ];
+
+if(needHangers){
+specRows.push({label:'Анкерный болт с полукольцом М8х40 (100 шт.)',value:totalHangers+' шт.',num:totalHangers,kind:'count'});
+specRows.push({label:'Дюбель-гвоздь SM-G 6x40 (3600/200шт.)',value:'≈ '+angleFasteners+' шт.',num:angleFasteners,kind:'approx'});
+}
 
 const warnings=[];
 if(lay.n3600<1) warnings.push('⚠ Ни одной несущей — увеличьте ширину помещения или сдвиньте раскладку.');
