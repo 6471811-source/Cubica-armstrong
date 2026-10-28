@@ -1461,23 +1461,26 @@ async function openKpPageViaWorker(){
           }
         });
         
-        // 3. Формируем новые строки спецификации
-        // Берем ВСЕ строки из текущего расчета, не фильтруя по qty > 0
-        const currentSpecRows = currentLayout.specRows || [];
+        // ★ ДЕЛАЕМ КАК В КУБОТЕ: упаковываем строки внутрь помещений
+        if (Array.isArray(rooms)) {
+          rooms.forEach(function(room) {
+            // Для каждой строки в помещении добавляем qtyCalc и price
+            room.rows = (room.rows || []).map(function(r) {
+              var oldInfo = oldMap[r.label] || { price: 0, qtyReserve: 0 };
+              return {
+                label: r.label,
+                qty: r.qty, // Это количество из спецификации
+                qtyCalc: r.qty, // Дублируем в qtyCalc для надежности
+                qtyReserve: oldInfo.qtyReserve,
+                unit: r.unit || 'шт.',
+                price: oldInfo.price
+              };
+            });
+          });
+        }
         
-        rec.rows = currentSpecRows.map(function(specRow){
-          if (specRow.kind === 'area') return null; // Площадь в счёт не пишем
-          
-          var oldInfo = oldMap[specRow.label] || { price: 0, qtyReserve: 0 };
-          return {
-            label: specRow.label,
-            // Обязательно передаем qtyCalc, чтобы i5 понял количество
-            qtyCalc: Number(specRow.num) || 0, 
-            qtyReserve: oldInfo.qtyReserve,
-            unit: specRow.unit || 'шт.',
-            price: oldInfo.price
-          };
-        }).filter(Boolean); // Убираем null (площадь)
+        // Очищаем общий rec.rows, чтобы journal-core не дублировал
+        rec.rows = [];
         
         rec.history = rec.history || [];
         rec.history.push({
