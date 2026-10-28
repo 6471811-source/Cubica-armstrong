@@ -29,31 +29,38 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 .ac-in button:hover:not(:disabled){filter:brightness(1.1)}
 .ac-in button:disabled{opacity:.5;cursor:not-allowed}
 .ac-in button.add{background:#2e7d32}.ac-in button.draw{background:#6a1b9a}.ac-in button.upd{background:#1565c0}.ac-in button.rst{background:#777}.ac-in button.kp{background:#c00000}
-.ac-sliders-row{grid-area:s;display:flex;flex-wrap:wrap;gap:12px;padding:14px 16px;background:#fafafa;border:1px solid #eee;border-radius:8px}
-.ac-slider-sec{display:flex;flex-direction:column;gap:6px;padding:10px 14px;background:#fff;border:1px solid #eee;border-radius:8px;flex:1 1 200px;min-width:180px;user-select:none;-webkit-user-select:none}
-.ac-slider-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11px;font-weight:700;color:#9aa1ac;letter-spacing:.8px;text-transform:uppercase}
-.ac-slider-head .ac-slider-val{color:#161a1f;font-size:14px;font-weight:700;letter-spacing:0;text-transform:none;white-space:nowrap}
-.ac-slider-sec input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:14px;background:transparent;padding:0;margin:0;cursor:pointer;outline:none;display:block;border:none;touch-action:manipulation}
-.ac-slider-sec input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:#e0e4ea;border:none}
-.ac-slider-sec input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:#161a1f;margin-top:-9px;cursor:grab;box-shadow:0 2px 6px rgba(0,0,0,.25);border:2px solid #fff}
-.ac-slider-sec input[type=range]:hover::-webkit-slider-thumb,.ac-slider-sec input[type=range]:active::-webkit-slider-thumb{background:#c8672b;transform:scale(1.08)}
-@media(max-width:600px){.ac-slider-sec input[type=range]{height:32px}.ac-slider-sec input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px}.ac-slider-sec input[type=range]::-webkit-slider-thumb{width:28px;height:28px;margin-top:-11px}}
-.ac-lw{grid-area:l;display:grid;grid-template-rows:auto auto auto;gap:14px;min-width:0;align-self:start}
-.ac-adjust{display:flex;flex-wrap:wrap;gap:12px;padding:12px 16px;background:#fafafa;border:1px solid #eee;border-radius:8px}
-.ac-adjust .ac-slider-sec{flex:1 1 260px}
-.ac-vr{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+
+/* Сетка для ползунков как в оригинале */
+.ac-lw{grid-area:l;display:grid;grid-template-rows:auto 1fr auto;gap:14px;min-width:0}
+.ac-ts,.ac-bs{display:flex;align-items:center;gap:14px;padding:12px 16px;background:#fafafa;border:1px solid #eee;border-radius:8px}
+.ac-ts label,.ac-bs label{font-size:13px;color:#555;font-weight:600;min-width:200px}
+.ac-ts input[type=range],.ac-bs input[type=range]{flex:1;min-width:120px;cursor:pointer;accent-color:#d32f2f}
+.ac-val{font-weight:700;color:#d32f2f;min-width:120px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.ac-mr{display:grid;grid-template-columns:74px minmax(0,1fr);gap:12px;align-items:stretch;min-width:0}
+.ac-ls{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px;background:#fafafa;border:1px solid #eee;border-radius:8px;min-width:0}
+.ac-ls label{font-size:11px;text-align:center;color:#555;font-weight:600;line-height:1.2}
+.ac-ls input[type=range].v{writing-mode:vertical-lr;direction:rtl;-webkit-appearance:slider-vertical;appearance:slider-vertical;width:8px;flex:1;min-height:220px;cursor:pointer;accent-color:#d32f2f;margin:0}
+.ac-ls .ac-val{font-size:11px;min-width:auto;text-align:center;color:#d32f2f;font-weight:700}
+.ac-v{min-width:0}
+.ac-vr{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
 .ac-vt{display:inline-flex;background:#f0f0f0;border-radius:8px;padding:4px;border:1px solid #e0e0e0}
 .ac-vt button{background:transparent;border:none;padding:8px 18px;font-size:13px;font-weight:600;color:#666;border-radius:6px;cursor:pointer;font-family:inherit}
 .ac-vt button.active{background:#fff;color:#d32f2f;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.ac-lay{text-align:center}
+.ac-cb-btn{padding:7px 14px;font-size:12px;font-weight:600;border:1px solid #ddd;background:#fff;color:#333;border-radius:8px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap}
+.ac-cb-btn:hover{background:#f5f5f5}
+.ac-cb-btn.active{background:#d32f2f;color:#fff;border-color:#d32f2f}
+
+.ac-lay{text-align:center;margin-bottom:14px}
 .ac-lay svg{max-width:100%;height:auto;display:block;margin:0 auto;border-radius:8px}
+.ac-l3{position:relative;margin-bottom:14px}
 .ac-l3 canvas{display:block;max-width:100%;height:auto;margin:0 auto;border-radius:8px;background:#f0f2f5;cursor:grab;touch-action:none}
-.ac-tb{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;padding:10px 12px;background:#fafafa;border:1px solid #eee;border-radius:8px}
-.ac-chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#444;cursor:pointer;padding:4px 8px}
+.ac-tb{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin-top:10px;padding:10px 12px;background:#fafafa;border:1px solid #eee;border-radius:8px}
+.ac-chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#444;cursor:pointer;padding:4px 8px;border-radius:5px}
 .ac-chk input{accent-color:#d32f2f}
 .ac-cb{padding:6px 12px;font-size:12px;font-weight:600;border:1px solid #ddd;background:#fff;color:#333;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap}
 .ac-cb.pr{background:#c00000;color:#fff;border-color:#c00000}
-.ac-hint{text-align:center;font-size:11.5px;color:#999}
+.ac-hint{text-align:center;font-size:11.5px;color:#999;margin-top:8px}
+
 .ac-pn{grid-area:p;background:#fafafa;border:1px solid #eee;border-radius:10px;padding:18px 20px;align-self:start;position:sticky;top:20px;max-height:calc(100vh - 40px);overflow-y:auto}
 .ac-ph{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:2px solid #d32f2f;padding-bottom:10px;margin-bottom:14px}
 .ac-pt{margin:0;font-size:13px;font-weight:800;color:#1a1a2e;text-transform:uppercase;letter-spacing:1px}
@@ -64,61 +71,72 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 .ac-res ul{list-style:none;padding:0;margin:0}
 .ac-res li{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed #e6e6e6}
 .ac-res li:last-child{border-bottom:none}
-.ac-res .cl{display:inline-block;width:14px;height:14px;border-radius:3px;flex-shrink:0}
+.ac-res .cl{display:inline-block;width:12px;height:12px;border-radius:3px;flex-shrink:0}
 .ac-res .lb{flex:1;color:#555}
 .ac-res .vl{font-weight:700;color:#1a1a2e;white-space:nowrap;text-align:right}
 .ac-note{margin-top:14px;padding-top:12px;border-top:1px solid #eee;font-size:11.5px;color:#888;line-height:1.5}
 .ac-note.warn{color:#b26a00;background:#fff8e5;border:1px solid #f0d896;border-radius:6px;padding:10px 12px;margin-top:12px}
 .ac-note.info{color:#1565c0;background:#eef4fb;border:1px solid #cfdcec;border-radius:6px;padding:10px 12px;margin-top:12px}
 .ac-pj{margin-top:16px;padding-top:14px;border-top:1px solid #e6e6e6}
-.ac-pjt{font-size:12px;font-weight:800;color:#1a1a2e;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;justify-content:space-between}
-.ac-pjt small{font-weight:600;color:#888;font-size:11px;text-transform:none}
+.ac-pjt{font-size:12px;font-weight:800;color:#1a1a2e;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.ac-pjt small{font-weight:600;color:#888;font-size:11px;text-transform:none;letter-spacing:0}
 .ac-pjl{list-style:none;padding:0;margin:0 0 10px 0}
 .ac-pji{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff;border:1px solid #eee;border-radius:6px;margin-bottom:6px;cursor:pointer;transition:all .15s}
+.ac-pji:hover{border-color:#d0d0d0;background:#fafafa}
 .ac-pji.active{background:#fff5f5;border-color:#f0c0c0;box-shadow:inset 3px 0 0 #c00000}
 .ac-pjn{font-size:12.5px;font-weight:700;color:#1a1a2e}
 .ac-pjd{flex:1;font-size:11.5px;color:#888;text-align:right}
-.ac-pjx{background:transparent;border:none;color:#999;font-size:14px;cursor:pointer;padding:2px 6px;font-family:inherit;line-height:1}
+.ac-pjx{background:transparent;border:none;color:#999;font-size:14px;cursor:pointer;padding:2px 6px;border-radius:4px;font-family:inherit;line-height:1}
+.ac-pjx:hover{background:#ffe5e5;color:#c00000}
 .ac-pje{font-size:12px;color:#999;text-align:center;padding:10px 0;font-style:italic}
 .ac-pja{display:flex;gap:8px;justify-content:flex-end}
 .ac-pja button{padding:6px 12px;font-size:11.5px;font-weight:600;border:1px solid #ddd;background:#fff;color:#555;border-radius:6px;cursor:pointer;font-family:inherit}
+.ac-pja button:hover{background:#f5f5f5}
 .ac-pja button.dg{color:#c00000;border-color:#f0c0c0}
+.ac-pja button.dg:hover{background:#fff0f0}
 .ft{max-width:1280px;margin:20px auto 0;color:#888;font-size:12px;text-align:center}
-.ac-modal{position:fixed;inset:0;background:rgba(15,15,25,.72);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px}
+.ac-modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(15,15,25,.72);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px}
 .ac-modal.open{display:flex}
 .ac-modal-inner{background:#fff;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.35);max-width:1100px;width:100%;padding:20px;display:flex;flex-direction:column;gap:12px;max-height:96vh;overflow:auto}
 .ac-modal-title{margin:0;font-size:15px;font-weight:800;color:#1a1a2e}
 .ac-modal-hint{font-size:12px;color:#888;margin:0}
-.ac-draw-hud{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:10px 14px;background:#fafafa;border:1px solid #eee;border-radius:8px}
+.ac-draw-hud{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:10px 14px;background:#fafafa;border:1px solid #eee;border-radius:8px;flex:0 0 auto}
 .ac-draw-mode{font-size:13px;font-weight:700;color:#6a1b9a}
 .ac-draw-length-wrap{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#555}
-.ac-draw-length-wrap input{width:100px;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:14px;text-align:right}
-.ac-draw-body{display:flex;flex-direction:row;gap:12px;align-items:stretch}
-.ac-draw-wrap{position:relative;background:#fafafa;border:1px solid #e6e6e6;border-radius:8px;overflow:hidden;aspect-ratio:900/520;flex:1 1 0;min-width:0}
+.ac-draw-length-wrap label{font-weight:600}
+.ac-draw-length-wrap input{width:100px;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:14px;font-family:inherit;text-align:right}
+.ac-draw-length-wrap input:focus{outline:none;border-color:#c00000}
+.ac-draw-body{display:flex;flex-direction:row;gap:12px;align-items:stretch;flex:0 0 auto;min-height:0}
+.ac-draw-wrap{position:relative;background:#fafafa;border:1px solid #e6e6e6;border-radius:8px;overflow:hidden;aspect-ratio:900/520;flex:1 1 0;min-width:0;align-self:flex-start}
 .ac-draw-canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;background:#fff}
 .ac-seg-list{flex:0 0 240px;width:240px;overflow-y:auto;border:1px solid #eee;border-radius:8px;padding:8px;background:#fafafa;display:flex;flex-direction:column;gap:6px}
 .ac-seg-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#444}
 .ac-seg-row .arrow{width:26px;text-align:center;font-weight:800;color:#c00000;font-size:16px}
 .ac-seg-row .lbl{flex:1;color:#777;font-size:12px}
-.ac-seg-row input{width:110px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12.5px;text-align:right}
+.ac-seg-row input{width:110px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12.5px;font-family:inherit;text-align:right}
+.ac-seg-row input:focus{outline:none;border-color:#d32f2f}
 .ac-seg-empty{font-size:12px;color:#999;text-align:center;padding:6px 0;font-style:italic}
-.ac-modal-bar{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between}
+.ac-modal-bar{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;flex:0 0 auto}
 .ac-modal-bar button{padding:9px 16px;font-size:13px;font-weight:600;border-radius:6px;cursor:pointer;font-family:inherit;border:1px solid #ddd;background:#fff;color:#333}
+.ac-modal-bar button:hover{background:#f5f5f5}
 .ac-modal-bar button.pr{background:#c00000;color:#fff;border-color:#c00000}
+.ac-modal-bar button.pr:hover{background:#a00000}
 .ac-modal-bar button.dg{color:#c00000;border-color:#f0c0c0}
+.ac-modal-bar button.dg:hover{background:#fff0f0}
 .ac-modal-bar button:disabled{opacity:.45;cursor:not-allowed}
 .ac-modal-bar-group{display:flex;gap:8px;flex-wrap:wrap}
-.ac-modal-warn{position:absolute;left:12px;right:12px;top:12px;padding:8px 12px;border-radius:6px;font-size:12px;line-height:1.5;display:none;background:rgba(255,248,229,.96);border:1px solid #f0d896;color:#b26a00;z-index:5;pointer-events:none}
+.ac-modal-warn{position:absolute;left:12px;right:12px;top:12px;padding:8px 12px;border-radius:6px;font-size:12px;line-height:1.5;display:none;background:rgba(255,248,229,0.96);border:1px solid #f0d896;color:#b26a00;z-index:5;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.08)}
 .ac-modal-warn.show{display:block}
-.ac-modal-warn.err{background:rgba(255,235,235,.96);border-color:#f0a0a0;color:#a00000}
+.ac-modal-warn.err{background:rgba(255,235,235,0.96);border-color:#f0a0a0;color:#a00000}
 .ac-toast{position:fixed;left:50%;top:24px;transform:translateX(-50%);background:#2e7d32;color:#fff;padding:14px 26px;border-radius:10px;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:3000;display:none;font-family:'Segoe UI',Roboto,Arial,sans-serif;max-width:90vw;text-align:center}
 .ac-toast.show{display:block;animation:acToastIn .3s ease-out}
 @keyframes acToastIn{from{transform:translateX(-50%) translateY(-30px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
-@media(max-width:1024px){.ac{grid-template-columns:1fr;grid-template-areas:"w" "t" "i" "s" "l" "p"}.ac-pn{position:static;max-height:none}}
-@media(max-width:700px){.ac-draw-body{flex-direction:column}.ac-draw-wrap{width:100%}.ac-seg-list{flex:0 0 auto;width:100%;max-height:180px}}
-@media(max-width:640px){.ac{padding:16px}.ac-in input[type=number]{width:100%}}
+@media(max-width:1024px){.ac{grid-template-columns:1fr;grid-template-areas:"w" "t" "i" "s" "l" "p"}.ac-pn{position:static;max-height:none}.ac-ts label,.ac-bs label{min-width:auto}.ac-val{min-width:auto}}
+@media(max-width:700px){.ac-draw-body{flex-direction:column}.ac-draw-wrap{width:100%;align-self:stretch}.ac-seg-list{flex:0 0 auto;width:100%;max-height:180px}}
+@media(max-width:640px){.ac{padding:16px}.ac-mr{grid-template-columns:60px minmax(0,1fr)}.ac-ts,.ac-bs{flex-wrap:wrap}.ac-ts label,.ac-bs label{min-width:100%}.ac-in input[type=number]{width:100%}.ac-in button{margin-left:0}.ac-modal{padding:8px}.ac-modal-inner{padding:14px}}
 </style></head><body>
-<main><div class="ac">
+<main>
+<div class="ac">
 <div class="ac-work" id="ac-work-label"><span class="badge draft" id="ac-work-badge">🟡 ЧЕРНОВИК</span><span class="name" id="ac-work-text">Новое помещение</span><span class="hint" id="ac-work-hint">Настройте параметры</span></div>
 <div class="ac-context-hint draft" id="ac-context-hint"><span class="ic">💡</span><span id="ac-context-text">Это новое помещение. Нажмите «💾 Сохранить изменения», чтобы добавить его к другим.</span></div>
 <div class="ac-title">
@@ -134,38 +152,82 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 <button type="button" class="kp" id="ac-kp-open">📤 Коммерческое предложение</button>
 <button type="button" class="rst" id="ac-reset">↺ Отменить изменения</button>
 </div>
-<div class="ac-sliders-row">
-<div class="ac-slider-sec"><div class="ac-slider-head"><span>Смещение X</span><span class="ac-slider-val" id="ac-offset-x-val">0 мм</span></div><input type="range" id="ac-offset-x" min="-1200" max="1200" step="50" value="0"></div>
-<div class="ac-slider-sec"><div class="ac-slider-head"><span>Смещение Y</span><span class="ac-slider-val" id="ac-offset-y-val">0 мм</span></div><input type="range" id="ac-offset-y" min="-1200" max="1200" step="50" value="0"></div>
-<div class="ac-slider-sec"><div class="ac-slider-head"><span>Поворот раскладки</span><span class="ac-slider-val" id="ac-rotation-val">0°</span></div><input type="range" id="ac-rotation" min="-45" max="45" step="5" value="0"></div>
-</div>
 <div class="ac-lw">
+<div class="ac-ts"><label>Смещение влево-вправо (← →)</label><input type="range" id="ac-offset-x" min="-1200" max="1200" step="50" value="0"><span class="ac-val" id="ac-offset-x-val">0 мм</span></div>
+<div class="ac-mr">
+<div class="ac-ls"><label>Смещение вверх-вниз (↑ ↓)</label><input type="range" id="ac-offset-y" class="v" orient="vertical" min="-1200" max="1200" step="50" value="0"><span class="ac-val" id="ac-offset-y-val">0 мм</span></div>
+<div class="ac-v">
 <div class="ac-vr">
 <div class="ac-vt"><button type="button" class="active" data-view="2d">2D · Схема</button><button type="button" data-view="3d">3D · Объём</button></div>
-<button type="button" class="ac-cb" id="ac-rotate90" title="Повернуть раскладку реек на 90°">↻ Повернуть на 90°</button>
-<button type="button" class="ac-cb" id="ac-standard" title="Расчёт по техкарте 132-06 ТК">📐 Техкарта 132-06 ТК</button>
+<div style="display:flex;gap:8px;flex-wrap:wrap;">
+<button type="button" class="ac-cb-btn" id="ac-rotate90">↻ Повернуть на 90°</button>
+<button type="button" class="ac-cb-btn" id="ac-standard">📐 Техкарта 132-06 ТК</button>
+</div>
 </div>
 <div class="ac-lay" id="ac-layout"></div>
 <div class="ac-l3" id="ac-layout3d" style="display:none;"><canvas id="ac-canvas3d" width="640" height="440"></canvas></div>
 <div class="ac-tb">
-<label class="ac-chk"><input type="checkbox" id="ac-cb-tiles" checked> Плиты</label>
-<label class="ac-chk"><input type="checkbox" id="ac-cb-hangers" checked> Подвесы</label>
-<label class="ac-chk"><input type="checkbox" id="ac-cb-ceiling"> Перекрытие</label>
+<label class="ac-chk"><input type="checkbox" id="ac-show-tiles"> Плиты</label>
+<label class="ac-chk"><input type="checkbox" id="ac-show-hangers" checked> Подвесы</label>
+<label class="ac-chk"><input type="checkbox" id="ac-show-ceiling"> Перекрытие</label>
 <button type="button" class="ac-cb" id="ac-cam-reset">⟲ Камера</button>
 <button type="button" class="ac-cb pr" id="ac-save-2d">📄 2D (PDF)</button>
 <button type="button" class="ac-cb pr" id="ac-save-3d">📄 3D (PDF)</button>
 </div>
 <div class="ac-hint">3D: ЛКМ — вращение · колесо — зум · ПКМ — перенос</div>
 </div>
+</div>
+<div class="ac-bs"><label>Поворот раскладки</label><input type="range" id="ac-rotation" min="-45" max="45" step="5" value="0"><span class="ac-val" id="ac-rotation-val">0°</span></div>
+</div>
 <aside class="ac-pn" id="ac-panel">
-<div class="ac-ph"><h4 class="ac-pt">Спецификация</h4><div class="ac-st" id="ac-spec-toggle"><button type="button" data-specmode="current" class="active">Помещение</button><button type="button" data-specmode="total">Итог</button></div></div>
+<div class="ac-ph">
+<h4 class="ac-pt">Спецификация</h4>
+<div class="ac-st" id="ac-spec-toggle"><button type="button" data-specmode="current" class="active">Помещение</button><button type="button" data-specmode="total">Итог</button></div>
+</div>
 <div class="ac-res" id="ac-results"></div>
-<div class="ac-pj"><div class="ac-pjt"><span>Проект CUBICA.BY</span><small><span id="ac-project-count">0</span> помещ.</small></div><ul class="ac-pjl" id="ac-project-list"></ul><div class="ac-pja"><button type="button" class="dg" id="ac-project-clear">Очистить проект</button></div></div>
+<div class="ac-pj">
+<div class="ac-pjt"><span>Проект CUBICA.BY</span><small><span id="ac-project-count">0</span> помещ.</small></div>
+<ul class="ac-pjl" id="ac-project-list"></ul>
+<div class="ac-pja"><button type="button" class="dg" id="ac-project-clear">Очистить проект</button></div>
+</div>
 </aside>
-</div></main>
+</div>
+</main>
 <footer class="ft">© 2026 CUBICA.BY · Кассетный потолок</footer>
 
-<div class="ac-modal" id="ac-draw-modal"><div class="ac-modal-inner"><h3 class="ac-modal-title">✏️ Начертить помещение</h3><p class="ac-modal-hint">Клик — точка. Клик по первой точке — замкнуть контур.</p><div class="ac-draw-hud"><div class="ac-draw-mode" id="ac-draw-mode">Кликните, чтобы задать первую точку</div><div class="ac-draw-length-wrap"><label for="ac-draw-length-input">Длина:</label><input type="number" id="ac-draw-length-input" placeholder="авто" min="100" step="100"><span>мм</span></div></div><div class="ac-draw-body"><div class="ac-draw-wrap"><canvas id="ac-draw-canvas" class="ac-draw-canvas" width="900" height="520"></canvas><div class="ac-modal-warn" id="ac-modal-warn"></div></div><div class="ac-seg-list" id="ac-seg-list"></div></div><div class="ac-modal-bar"><div class="ac-modal-bar-group"><button type="button" id="ac-draw-undo">↶ Отменить</button><button type="button" id="ac-draw-close-contour">🔒 Замкнуть</button><button type="button" class="dg" id="ac-draw-clear">Очистить</button></div><div class="ac-modal-bar-group"><button type="button" id="ac-draw-cancel">Отмена</button><button type="button" class="pr" id="ac-draw-apply" disabled>Применить</button></div></div></div></div>
+<div class="ac-modal" id="ac-draw-modal">
+<div class="ac-modal-inner">
+<h3 class="ac-modal-title">✏️ Начертить помещение</h3>
+<p class="ac-modal-hint">Клик — ставит точку. Ведите мышь: пунктир показывает будущую стену. Клик по первой точке (зелёное кольцо) — замкнуть контур.</p>
+<div class="ac-draw-hud">
+<div class="ac-draw-mode" id="ac-draw-mode">Кликните, чтобы задать первую точку</div>
+<div class="ac-draw-length-wrap">
+<label for="ac-draw-length-input">Длина:</label>
+<input type="number" id="ac-draw-length-input" placeholder="авто" min="100" step="100">
+<span>мм</span>
+</div>
+</div>
+<div class="ac-draw-body">
+<div class="ac-draw-wrap">
+<canvas id="ac-draw-canvas" class="ac-draw-canvas" width="900" height="520"></canvas>
+<div class="ac-modal-warn" id="ac-modal-warn"></div>
+</div>
+<div class="ac-seg-list" id="ac-seg-list"></div>
+</div>
+<div class="ac-modal-bar">
+<div class="ac-modal-bar-group">
+<button type="button" id="ac-draw-undo">↶ Отменить стену</button>
+<button type="button" id="ac-draw-close-contour">🔒 Замкнуть контур</button>
+<button type="button" class="dg" id="ac-draw-clear">Очистить</button>
+</div>
+<div class="ac-modal-bar-group">
+<button type="button" id="ac-draw-cancel">Отмена</button>
+<button type="button" class="pr" id="ac-draw-apply" disabled>Применить</button>
+</div>
+</div>
+</div>
+</div>
+
 <div class="ac-modal" id="ac-unsaved-modal"><div class="ac-modal-inner" style="max-width:460px"><h3 class="ac-modal-title">Несохранённые изменения</h3><p class="ac-modal-hint" id="ac-unsaved-text">В текущем помещении есть несохранённые изменения.</p><div class="ac-modal-bar" style="justify-content:flex-end;margin-top:8px"><button type="button" id="ac-unsaved-cancel">Отмена</button><button type="button" id="ac-unsaved-discard" class="dg">Не сохранять</button><button type="button" id="ac-unsaved-save" class="pr">Сохранить</button></div></div></div>
 <div class="ac-toast" id="ac-toast"></div>
 
@@ -183,7 +245,7 @@ const resultsDiv=$('ac-results'),layout2dDiv=$('ac-layout'),layout3dDiv=$('ac-la
 const toggleBtns=document.querySelectorAll('.ac-vt button');
 const rotate90Btn=$('ac-rotate90'),standardBtn=$('ac-standard');
 const camResetBtn=$('ac-cam-reset'),save2dBtn=$('ac-save-2d'),save3dBtn=$('ac-save-3d');
-const showTilesChk=$('ac-cb-tiles'),showHangersChk=$('ac-cb-hangers'),showCeilingChk=$('ac-cb-ceiling');
+const showTilesChk=$('ac-show-tiles'),showHangersChk=$('ac-show-hangers'),showCeilingChk=$('ac-show-ceiling');
 const specToggleEl=$('ac-spec-toggle');
 const projectListEl=$('ac-project-list'),projectCountEl=$('ac-project-count'),projectClearBtn=$('ac-project-clear');
 
@@ -314,6 +376,7 @@ function resetForNewRoom(){
   const savedOffsetY = offsetYSlider.value;
   const savedRotation = rotationSlider.value;
   const savedStandard = standardMode;
+  const savedHangers = showHangersChk.checked;
 
   lengthInput.value=7350;
   widthInput.value=5600;
@@ -324,6 +387,7 @@ function resetForNewRoom(){
   standardBtn.classList.toggle('active',standardMode);
   rotated90=false;
   rotate90Btn.classList.remove('active');
+  showHangersChk.checked = savedHangers;
   updateLabels();
 
   roomPolygon=null;
@@ -649,9 +713,6 @@ let threeRenderer,threeScene,threeCamera,threeControls;
 let threeRoomGroup,threeGridPivot,threeTilesGroup,threeHangersGroup,threeCeilingMesh;
 let project=[],activeRoomIndex=null,specMode='current';
 
-// Глобальная настройка: нужны ли подвесы
-let needHangers=true;
-
 function calculate(){
 let L_in=parseFloat(lengthInput.value),W_in=parseFloat(widthInput.value);
 if(isNaN(L_in)||isNaN(W_in)||L_in<=0||W_in<=0){
@@ -702,6 +763,9 @@ const areaM2 = roomPolygon ? polyArea(roomPolygon)/1e6 : L_in*W_in/1e6;
 const perimeter = roomPolygon ? polyPerimeter(roomPolygon) : 2*(L_in+W_in);
 const wallAnglePieces=Math.ceil(perimeter/3000);
 const angleFasteners=Math.ceil(perimeter/ANGLE_WALL_SPACING);
+
+// ===== ПОДВЕСЫ И КРЕПЕЖ =====
+const needHangers = showHangersChk.checked;
 
 const specRows=[
 {label:'Площадь',value:areaM2.toFixed(2)+' м²',num:areaM2,kind:'area'},
@@ -1238,7 +1302,7 @@ if(threeTilesGroup)threeTilesGroup.visible=showTilesChk.checked;
 if(threeHangersGroup)threeHangersGroup.visible=showHangersChk.checked;
 if(threeCeilingMesh)threeCeilingMesh.visible=showCeilingChk.checked;
 }
-[showTilesChk,showHangersChk,showCeilingChk].forEach(c=>c.addEventListener('change',applyVisibility));
+[showTilesChk,showHangersChk,showCeilingChk].forEach(c=>c.addEventListener('change',()=>{applyVisibility();calculate();}));
 
 // ===== РЕДАКТОР КОНТУРА =====
 const drawModal=$('ac-draw-modal'),drawCanvas=$('ac-draw-canvas'),drawCtx=drawCanvas.getContext('2d');
@@ -1299,9 +1363,10 @@ async function openKpPageViaWorker(){
     let totals = project.length>0 ? computeTotals() : currentLayout.specRows.slice();
     const rows=[];
     for(const r of totals){
-      if(!r||r.kind==='area')continue;
-      const qty=Number(r.num)||0;
-      if(qty<=0)continue;
+      if(!r) continue; 
+      if(r.kind === 'area') continue; // Площадь в счета не передаём
+      const qty = Number(r.num) || 0;
+      if(qty <= 0) continue;
       const label = String(r.label||'');
       rows.push({label: label, qty: qty, unit: r.unit || 'шт.'});
     }
