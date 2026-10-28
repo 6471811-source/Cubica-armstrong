@@ -1445,9 +1445,11 @@ async function openKpPageViaWorker(){
     if(JID && window.CubicaJournal){
       const rec = window.CubicaJournal.get(JID);
       if(rec){
+        // 1. Передаем помещения (rooms) как есть
         rec.rooms = rooms;
         rec.meta = payload.meta;
         
+        // 2. Сохраняем старые цены, если они были
         var oldRows = Array.isArray(rec.rows) ? rec.rows : [];
         var oldMap = {};
         oldRows.forEach(function(oldR){
@@ -1459,17 +1461,23 @@ async function openKpPageViaWorker(){
           }
         });
         
-        rec.rows = rows.map(function(newR){
-          var oldInfo = oldMap[newR.label] || { price: 0, qtyReserve: 0 };
-          var row = {
-            label: newR.label,
-            qtyCalc: Number(newR.qty) || 0,
+        // 3. Формируем новые строки спецификации
+        // Берем ВСЕ строки из текущего расчета, не фильтруя по qty > 0
+        const currentSpecRows = currentLayout.specRows || [];
+        
+        rec.rows = currentSpecRows.map(function(specRow){
+          if (specRow.kind === 'area') return null; // Площадь в счёт не пишем
+          
+          var oldInfo = oldMap[specRow.label] || { price: 0, qtyReserve: 0 };
+          return {
+            label: specRow.label,
+            // Обязательно передаем qtyCalc, чтобы i5 понял количество
+            qtyCalc: Number(specRow.num) || 0, 
             qtyReserve: oldInfo.qtyReserve,
-            unit: newR.unit || 'шт.',
+            unit: specRow.unit || 'шт.',
             price: oldInfo.price
           };
-          return row;
-        });
+        }).filter(Boolean); // Убираем null (площадь)
         
         rec.history = rec.history || [];
         rec.history.push({
@@ -1477,9 +1485,12 @@ async function openKpPageViaWorker(){
           by: window.CubicaJournal.manager(),
           action: 'from calculator (armstrong)'
         });
+        
+        // 4. Сохраняем и открываем i5
         window.CubicaJournal.save(rec, {assignNumber:false});
         const i5url = window.CubicaJournal.i5UrlForRecord(rec);
         window.open(i5url, '_blank');
+        
         try{ window.close(); }catch(e){}
         setTimeout(function(){ if(!document.hidden) showToast('Готово! Эту вкладку можно закрыть', '#1565c0'); }, 500);
         return;
