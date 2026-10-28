@@ -16,8 +16,8 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 .ac-work .hint{margin-left:auto;font-size:12px;color:#666;font-weight:500;flex-shrink:0}
 .ac-context-hint{grid-area:w;margin-top:-8px;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;line-height:1.5;display:flex;align-items:center;gap:10px}
 .ac-context-hint.draft{background:#fff3cd;border:1px solid #ffeeba;color:#856404}
-.ac-context-hint.editing{background:#cfe2ff;color:#084298;border:1px solid #b6d4fe}
-.ac-context-hint.saved{background:#d1e7dd;color:#0f5132;border:1px solid #badbcc}
+.ac-context-hint.editing{background:#cfe2ff;border:1px solid #b6d4fe;color:#084298}
+.ac-context-hint.saved{background:#d1e7dd;border:1px solid #badbcc;color:#0f5132}
 .ac-context-hint .ic{font-size:18px;flex-shrink:0}
 .ac-title{grid-area:t;font-size:20px;font-weight:800;color:#1a1a2e;padding-bottom:14px;border-bottom:2px solid #d32f2f;display:flex;align-items:center;gap:12px}
 .ac-title .lg{flex-shrink:0;width:38px;height:38px}
@@ -777,50 +777,50 @@ const hangerHeight = parseFloat(hangerHInput.value) || 0;
 
 const specRows=[
 {label:'Площадь',value:areaM2.toFixed(2)+' м²',num:areaM2,kind:'area'},
-{label:'Плита потолочная 600х600х12 мм',value:tilesCount+' шт.',num:tilesCount,kind:'count'},
-{label:'Т-профиль 24х33х3600 Премиум белый',value:nMainPieces+' шт.',num:nMainPieces,kind:'count',color:'#d32f2f'},
-{label:'Т-профиль 24х26х1200 белый',value:lay.n1200+' шт.',num:lay.n1200,kind:'count',color:'#1976d2'},
-{label:'Т-профиль 24х20х600 Стандарт белый',value:lay.n600+' шт.',num:lay.n600,kind:'count',color:'#43a047'},
-{label:'Уголок пристеночный 19х19 (3м) белый',value:wallAnglePieces+' шт.',num:wallAnglePieces,kind:'count'}
+{label:'Плита потолочная 600х600х12 мм',value:tilesCount+' шт.',num:tilesCount,kind:'count',unit:'шт.'},
+{label:'Т-профиль 24х33х3600 Премиум белый',value:nMainPieces+' шт.',num:nMainPieces,kind:'count',color:'#d32f2f',unit:'шт.'},
+{label:'Т-профиль 24х26х1200 белый',value:lay.n1200+' шт.',num:lay.n1200,kind:'count',color:'#1976d2',unit:'шт.'},
+{label:'Т-профиль 24х20х600 Стандарт белый',value:lay.n600+' шт.',num:lay.n600,kind:'count',color:'#43a047',unit:'шт.'},
+{label:'Уголок пристеночный 19х19 (3м) белый',value:wallAnglePieces+' шт.',num:wallAnglePieces,kind:'count',unit:'шт.'}
 ];
 
 if (isHangers) {
   if (hangerHeight < 0.50) {
-    specRows.push({label:'Европодвес 500 мм', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Европодвес 500 мм', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
   } else if (hangerHeight < 0.70) {
-    specRows.push({label:'Тяга-крюк 250 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
-    specRows.push({label:'Тяга-петля 350 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
-    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Тяга-крюк 250 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Тяга-петля 350 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
   } else if (hangerHeight < 1.00) {
-    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
-    specRows.push({label:'Тяга-петля 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
-    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Тяга-петля 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
   } else if (hangerHeight < 1.30) {
-    specRows.push({label:'Тяга-крюк 350 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
-    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
-    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Тяга-крюк 350 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
   } else if (hangerHeight < 1.50) {
-    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
-    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
-    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
   } else if (hangerHeight < 2.00) {
-    specRows.push({label:'Тяга-крюк 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
-    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
-    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
+    specRows.push({label:'Тяга-крюк 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
   } else if (hangerHeight < 2.50) {
-    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
-    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count'});
-    specRows.push({label:'Пружина европодвеса d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count'});
+    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count', unit:'шт.'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count', unit:'шт.'});
   } else {
-    specRows.push({label:'Тяга-крюк 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count'});
-    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count'});
-    specRows.push({label:'Пружина европодвеса d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count'});
+    specRows.push({label:'Тяга-крюк 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
+    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count', unit:'шт.'});
+    specRows.push({label:'Пружина европодвеса d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count', unit:'шт.'});
   }
 }
 
 // Анкеры и дюбели есть ВСЕГДА (не зависят от галочки подвесов)
-specRows.push({label:'Анкерный болт с полукольцом М8х40 (100 шт.)',value:totalHangers+' шт.',num:totalHangers,kind:'count'});
-specRows.push({label:'Дюбель-гвоздь SM-G 6x40 (3600/200шт.)',value:'≈ '+angleFasteners+' шт.',num:angleFasteners,kind:'approx'});
+specRows.push({label:'Анкерный болт с полукольцом М8х40 (100 шт.)',value:totalHangers+' шт.',num:totalHangers,kind:'count',unit:'шт.'});
+specRows.push({label:'Дюбель-гвоздь SM-G 6x40 (3600/200шт.)',value:'≈ '+angleFasteners+' шт.',num:angleFasteners,kind:'approx',unit:'шт.'});
 
 const warnings=[];
 if(lay.n3600<1) warnings.push('⚠ Ни одной несущей — увеличьте ширину помещения или сдвиньте раскладку.');
@@ -1203,7 +1203,7 @@ let value;
 if(row.kind==='area') value=num.toFixed(2)+' м²';
 else if(row.kind==='approx') value='≈ '+Math.round(num)+' шт.';
 else value=Math.round(num)+' шт.';
-return {label:row.label,value:value,color:row.color};
+return {label:row.label,value:value,color:row.color,unit:row.unit||'шт.'};
 });
 }
 function renderSpec(){
