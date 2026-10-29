@@ -1447,65 +1447,71 @@ async function openKpPageViaWorker(){
       if(rec){
         rec.type = 'armstrong';
         
-        // Берем данные НАПРЯМУЮ из текущего расчета на экране
-        const currentSpec = currentLayout ? currentLayout.specRows : [];
+        // 1. Берем все помещения (или текущее, если проект пуст)
+        const srcRooms = project.length > 0 ? project : [{ name: 'Помещение 1', L_in: currentLayout.L_in, W_in: currentLayout.W_in, areaM2: currentLayout.areaM2, specRows: currentLayout.specRows }];
         
-        // Собираем строки для i5 (только позиции, без площади)
-        const newRows = [];
-        for (const r of currentSpec) {
-          if (!r || r.kind === 'area') continue; // Пропускаем площадь
-          const qty = Number(r.num) || 0;
-          if (qty <= 0) continue;
-          
-          newRows.push({
-            label: String(r.label || ''),
-            qtyCalc: qty,
-            qtyReserve: 0,
-            unit: r.unit || 'шт.',
-            price: 0
-          });
+        // 2. Формируем массив rooms для КП (чтобы клиент видел по помещениям)
+        const rooms = srcRooms.map((room, i) => {
+          const roomRows = [];
+          if (room.specRows) {
+            for (const r of room.specRows) {
+              if (r && r.kind !== 'area' && Number(r.num) > 0) {
+                roomRows.push({
+                  label: String(r.label || ''),
+                  qty: Number(r.num),
+                  unit: r.unit || 'шт.'
+                });
+              }
+            }
+          }
+          return {
+            name: room.name || ('Помещение ' + (i + 1)),
+            L_in: room.L_in,
+            W_in: room.W_in,
+            areaM2: room.areaM2 || 0,
+            rows: roomRows
+          };
+        });
+
+        rec.rooms = rooms;
+
+        // 3. Собираем плоский список для i5 (просто суммируем всё в кучу)
+        const finalRows = [];
+        const seen = {}; // Чтобы не дублировать позиции
+
+        for (const room of rooms) {
+          for (const r of room.rows) {
+            const key = r.label + '|' + r.unit;
+            if (seen[key]) {
+              seen[key].qtyCalc += r.qty;
+            } else {
+              const newRow = {
+                label: r.label,
+                qtyCalc: r.qty,
+                qtyReserve: 0,
+                unit: r.unit,
+                price: 0
+              };
+              seen[key] = newRow;
+              finalRows.push(newRow);
+            }
+          }
         }
 
-        // Если мы сохранили несколько помещений в проект, 
-        // нужно сложить их спецификации (чтобы в счете была общая сумма)
-        if (project.length > 1) {
-           // Очищаем newRows и собираем из всех помещений
-           newRows.length = 0; 
-           const rowMap = {};
-           
-           for (const room of project) {
-             if (!room.specRows) continue;
-             for (const r of room.specRows) {
-               if (!r || r.kind === 'area') continue;
-               const qty = Number(r.num) || 0;
-               if (qty <= 0) continue;
-               
-               const key = r.label + '|' + (r.unit || 'шт.');
-               if (rowMap[key]) {
-                 rowMap[key].qtyCalc += qty;
-               } else {
-                 rowMap[key] = {
-                   label: String(r.label || ''),
-                   qtyCalc: qty,
-                   qtyReserve: 0,
-                   unit: r.unit || 'шт.',
-                   price: 0
-                 };
-                 newRows.push(rowMap[key]);
-               }
-             }
-           }
-        }
-
-        rec.rooms = project.length > 0 ? project : [{ name: 'Помещение 1', rows: newRows, L_in: currentLayout.L_in, W_in: currentLayout.W_in, areaM2: currentLayout.areaM2 }];
-        rec.rows = newRows; // Вставляем собранные строки
+        rec.rows = finalRows;
         rec.meta = { L_in: currentLayout.L_in, W_in: currentLayout.W_in, area: currentLayout.areaM2, polygon: currentLayout.polygon || null };
 
+        // 4. Сохраняем в журнал и открываем i5
         window.CubicaJournal.save(rec, { assignNumber: false });
-        const i5url = window.CubicaJournal.i5UrlForRecord(rec);
-        window.open(i5url, '_blank');
-        try { window.close(); } catch(e) {}
-        setTimeout(() => { if(!document.hidden) showToast('Готово! Эту вкладку можно закрыть', '#1565c0'); }, 500);
+        
+        // Небольшая задержка, чтобы журнал успел записать данные
+        setTimeout(() => {
+          const i5url = window.CubicaJournal.i5UrlForRecord(rec);
+          window.open(i5url, '_blank');
+          try { window.close(); } catch(e) {}
+          setTimeout(() => { if(!document.hidden) showToast('Готово! Эту вкладку можно закрыть', '#1565c0'); }, 500);
+        }, 300); 
+        
         return;
       }
     }
