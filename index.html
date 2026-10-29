@@ -1446,40 +1446,66 @@ async function openKpPageViaWorker(){
       const rec = window.CubicaJournal.get(JID);
       if(rec){
         rec.type = 'armstrong';
-        rec.rooms = rooms;
-
-        // ★ СБОРКА И СЖАТИЕ ДАННЫХ ДЛЯ I5 (как в Куботе)
-        const compressedRows = [];
-        const rowMap = {};
-
-        rooms.forEach(room => {
-          if (room.rows && room.rows.length) {
-            room.rows.forEach(r => {
-              const key = r.label + '|' + (r.unit || 'шт.');
-              if (rowMap[key]) {
-                rowMap[key].qtyCalc += Number(r.qty);
-              } else {
-                rowMap[key] = {
-                  label: r.label,
-                  qtyCalc: Number(r.qty) || 0,
-                  qtyReserve: 0,
-                  unit: r.unit || 'шт.',
-                  price: 0
-                };
-                compressedRows.push(rowMap[key]);
-              }
-            });
-          }
-        });
         
-        rec.rows = compressedRows;
-        rec.meta = payload.meta;
+        // Берем данные НАПРЯМУЮ из текущего расчета на экране
+        const currentSpec = currentLayout ? currentLayout.specRows : [];
+        
+        // Собираем строки для i5 (только позиции, без площади)
+        const newRows = [];
+        for (const r of currentSpec) {
+          if (!r || r.kind === 'area') continue; // Пропускаем площадь
+          const qty = Number(r.num) || 0;
+          if (qty <= 0) continue;
+          
+          newRows.push({
+            label: String(r.label || ''),
+            qtyCalc: qty,
+            qtyReserve: 0,
+            unit: r.unit || 'шт.',
+            price: 0
+          });
+        }
 
-        window.CubicaJournal.save(rec, {assignNumber:false});
+        // Если мы сохранили несколько помещений в проект, 
+        // нужно сложить их спецификации (чтобы в счете была общая сумма)
+        if (project.length > 1) {
+           // Очищаем newRows и собираем из всех помещений
+           newRows.length = 0; 
+           const rowMap = {};
+           
+           for (const room of project) {
+             if (!room.specRows) continue;
+             for (const r of room.specRows) {
+               if (!r || r.kind === 'area') continue;
+               const qty = Number(r.num) || 0;
+               if (qty <= 0) continue;
+               
+               const key = r.label + '|' + (r.unit || 'шт.');
+               if (rowMap[key]) {
+                 rowMap[key].qtyCalc += qty;
+               } else {
+                 rowMap[key] = {
+                   label: String(r.label || ''),
+                   qtyCalc: qty,
+                   qtyReserve: 0,
+                   unit: r.unit || 'шт.',
+                   price: 0
+                 };
+                 newRows.push(rowMap[key]);
+               }
+             }
+           }
+        }
+
+        rec.rooms = project.length > 0 ? project : [{ name: 'Помещение 1', rows: newRows, L_in: currentLayout.L_in, W_in: currentLayout.W_in, areaM2: currentLayout.areaM2 }];
+        rec.rows = newRows; // Вставляем собранные строки
+        rec.meta = { L_in: currentLayout.L_in, W_in: currentLayout.W_in, area: currentLayout.areaM2, polygon: currentLayout.polygon || null };
+
+        window.CubicaJournal.save(rec, { assignNumber: false });
         const i5url = window.CubicaJournal.i5UrlForRecord(rec);
         window.open(i5url, '_blank');
-        try{ window.close(); }catch(e){}
-        setTimeout(function(){ if(!document.hidden) showToast('Готово! Эту вкладку можно закрыть', '#1565c0'); }, 500);
+        try { window.close(); } catch(e) {}
+        setTimeout(() => { if(!document.hidden) showToast('Готово! Эту вкладку можно закрыть', '#1565c0'); }, 500);
         return;
       }
     }
