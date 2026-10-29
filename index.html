@@ -605,18 +605,41 @@ const jMax=Math.ceil((xWallMax-xS)/TILE_CELL)+1;
 const kMin=Math.floor((yWallTop-yS)/TILE_CELL)-1;
 const kMax=Math.ceil((yWallBot-yS)/TILE_CELL)+1;
 const vX=[];for(let j=jMin;j<=jMax;j++) vX.push(xS+j*TILE_CELL);
-const beams=[],tea600Y=[];
+let beams=[],tea600Y=[];
 for(let k=kMin;k<=kMax;k++){
-const y=yS+k*TILE_CELL;
-const m=((k%2)+2)%2;
-let isBeam;
-if(frameRigidChk.checked){
-  isBeam = true; // Жесткий каркас: несущие на каждой линии
-} else {
-  isBeam = phase===1 ? m===0 : m===1;
+  const y=yS+k*TILE_CELL;
+  const m=((k%2)+2)%2;
+  let isBeam;
+  if(frameRigidChk.checked){
+    isBeam = true; // Жесткий каркас: несущие на каждой линии
+  } else {
+    isBeam = phase===1 ? m===0 : m===1;
+  }
+  if(isBeam) beams.push(y); else tea600Y.push(y);
 }
-if(isBeam) beams.push(y); else tea600Y.push(y);
+
+// ★★★ НОВАЯ ЛОГИКА ТОЛЬКО ДЛЯ ТЕХКАРТЫ ★★★
+if (standardMode) {
+  const beamsInRoom = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
+  if (beamsInRoom.length > 0) {
+    const firstBeam = beamsInRoom[0];
+    const lastBeam = beamsInRoom[beamsInRoom.length - 1];
+    
+    // Проверка снизу (yWallTop)
+    if (firstBeam - yWallTop > 600) {
+      beams.push(yWallTop + 550); 
+    }
+    
+    // Проверка сверху (yWallBot)
+    if (yWallBot - lastBeam > 600) {
+      beams.push(yWallBot - 550);
+    }
+    
+    beams.sort((a, b) => a - b);
+  }
 }
+// ★★★ КОНЕЦ НОВОЙ ЛОГИКИ ★★★
+
 const xLineMin=vX[0],xLineMax=vX[vX.length-1];
 const beamsIn=beams.filter(y=>y>yWallTop-0.5&&y<yWallBot+0.5);
 const edges=[yWallTop,...beamsIn,yWallBot];
