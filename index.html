@@ -618,7 +618,7 @@ for(let k=kMin;k<=kMax;k++){
   if(isBeam) beams.push(y); else tea600Y.push(y);
 }
 
-// ★★★ НОВАЯ ЛОГИКА ТОЛЬКО ДЛЯ ТЕХКАРТЫ ★★★
+// ★★★ ЛОГИКА ДЛЯ ТЕХКАРТЫ: ДОБАВЛЯЕМ НЕСУЩИЕ К СТЕНАМ, ЕСЛИ НУЖНО ★★★
 if (standardMode) {
   const beamsInRoom = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
   if (beamsInRoom.length > 0) {
@@ -635,10 +635,11 @@ if (standardMode) {
       beams.push(yWallBot - 550);
     }
     
+    // Сортируем, чтобы новая несущая встала на свое место в массиве
     beams.sort((a, b) => a - b);
   }
 }
-// ★★★ КОНЕЦ НОВОЙ ЛОГИКИ ★★★
+// ★★★ КОНЕЦ ЛОГИКИ ★★★
 
 const xLineMin=vX[0],xLineMax=vX[vX.length-1];
 const beamsIn=beams.filter(y=>y>yWallTop-0.5&&y<yWallBot+0.5);
