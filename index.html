@@ -1408,133 +1408,122 @@ async function openKpPageViaWorker(){
   btn.disabled = true;
 
   try {
-    const totals = project.length>0 ? computeTotals() : currentLayout.specRows;
-    const rows=[];
-    for(const r of totals){
-      if(!r || r.kind==='area') continue;
-      const qty = Number(r.num) || 0;
-      if(qty <= 0) continue;
-      rows.push({label: String(r.label||''), qty: qty, unit: r.unit || 'шт.'});
-    }
+    // 1. Берем источники данных (все сохраненные помещения или текущий черновик)
+    const srcRooms = project.length > 0 ? project : [{ 
+      name: 'Помещение 1', 
+      L_in: currentLayout.L_in, 
+      W_in: currentLayout.W_in, 
+      areaM2: currentLayout.areaM2, 
+      specRows: currentLayout.specRows 
+    }];
 
-    const srcRooms = project.length>0 ? project : [{name:'Помещение 1',L_in: currentLayout.L_in,W_in: currentLayout.W_in,specRows: currentLayout.specRows,areaM2: currentLayout.areaM2}];
-    
-    const rooms = srcRooms.map((room, i) => {
-      const roomRows = (room.specRows||[])
-        .filter(r => r && r.kind!=='area')
-        .map(r => ({label:String(r.label||''), qty:Number(r.num)||0, unit:r.unit||'шт.'}))
-        .filter(r => r.qty > 0);
+    // 2. Формируем массив rooms (ДЛЯ КП - с разбивкой по помещениям)
+    const roomsForKp = srcRooms.map((room, i) => {
+      const roomRows = [];
+      if (room.specRows) {
+        for (const r of room.specRows) {
+          // Берем все, кроме площади
+          if (r && r.kind !== 'area' && Number(r.num) > 0) {
+            roomRows.push({
+              label: String(r.label || ''),
+              qty: Number(r.num),
+              unit: r.unit || 'шт.'
+            });
+          }
+        }
+      }
       return {
-        name: room.name || ('Помещение '+(i+1)),
+        name: room.name || ('Помещение ' + (i + 1)),
         L_in: room.L_in,
         W_in: room.W_in,
         areaM2: room.areaM2 || 0,
-        rows: roomRows,
+        rows: roomRows
       };
     });
 
-    const payload = {
-      v: 2,
-      type: 'armstrong',
-      rows: rows,
-      rooms: rooms,
-      company: { /* ... оставляем как было ... */ },
-      meta: { L_in: currentLayout.L_in, W_in: currentLayout.W_in, area: currentLayout.areaM2, polygon: currentLayout.polygon || null }
-    };
+    // 3. Формируем плоский список rows (ДЛЯ i5 - сжатый)
+    const flatRowsForI5 = [];
+    const seen = {};
 
-    if(JID && window.CubicaJournal){
-      const rec = window.CubicaJournal.get(JID);
-      if(rec){
-        rec.type = 'armstrong';
-        
-        // 1. Берем все помещения (или текущее, если проект пуст)
-        const srcRooms = project.length > 0 ? project : [{ name: 'Помещение 1', L_in: currentLayout.L_in, W_in: currentLayout.W_in, areaM2: currentLayout.areaM2, specRows: currentLayout.specRows }];
-        
-        // 2. Формируем массив rooms для КП (чтобы клиент видел по помещениям)
-        const rooms = srcRooms.map((room, i) => {
-          const roomRows = [];
-          if (room.specRows) {
-            for (const r of room.specRows) {
-              if (r && r.kind !== 'area' && Number(r.num) > 0) {
-                roomRows.push({
-                  label: String(r.label || ''),
-                  qty: Number(r.num),
-                  unit: r.unit || 'шт.'
-                });
-              }
-            }
-          }
-          return {
-            name: room.name || ('Помещение ' + (i + 1)),
-            L_in: room.L_in,
-            W_in: room.W_in,
-            areaM2: room.areaM2 || 0,
-            rows: roomRows
+    for (const room of roomsForKp) {
+      for (const r of room.rows) {
+        const key = r.label + '|' + r.unit;
+        if (seen[key]) {
+          seen[key].qtyCalc += r.qty;
+        } else {
+          const newRow = {
+            label: r.label,
+            qtyCalc: r.qty,
+            qtyReserve: 0,
+            unit: r.unit,
+            price: 0
           };
-        });
-
-        rec.rooms = rooms;
-
-        // 3. Собираем плоский список для i5 (просто суммируем всё в кучу)
-        const finalRows = [];
-        const seen = {}; // Чтобы не дублировать позиции
-
-        for (const room of rooms) {
-          for (const r of room.rows) {
-            const key = r.label + '|' + r.unit;
-            if (seen[key]) {
-              seen[key].qtyCalc += r.qty;
-            } else {
-              const newRow = {
-                label: r.label,
-                qtyCalc: r.qty,
-                qtyReserve: 0,
-                unit: r.unit,
-                price: 0
-              };
-              seen[key] = newRow;
-              finalRows.push(newRow);
-            }
-          }
+          seen[key] = newRow;
+          flatRowsForI5.push(newRow);
         }
+      }
+    }
 
-        rec.rows = finalRows;
-        rec.meta = { L_in: currentLayout.L_in, W_in: currentLayout.W_in, area: currentLayout.areaM2, polygon: currentLayout.polygon || null };
+    // 4. Проверка, что данные есть
+    if (flatRowsForI5.length === 0) {
+      alert('Ошибка: нет данных для отправки. Сначала сделайте расчёт.');
+      return;
+    }
 
-        // 4. Сохраняем в журнал и открываем i5
+    // 5. Сохраняем в журнал
+    if (JID && window.CubicaJournal) {
+      const rec = window.CubicaJournal.get(JID);
+      if (rec) {
+        rec.type = 'armstrong';
+        rec.rows = flatRowsForI5;      // Для i5
+        rec.rooms = roomsForKp;        // Для КП
+        rec.meta = { 
+          L_in: currentLayout.L_in, 
+          W_in: currentLayout.W_in, 
+          area: currentLayout.areaM2, 
+          polygon: currentLayout.polygon || null 
+        };
+
         window.CubicaJournal.save(rec, { assignNumber: false });
         
-        // Небольшая задержка, чтобы журнал успел записать данные
+        // Открываем i5
         setTimeout(() => {
           const i5url = window.CubicaJournal.i5UrlForRecord(rec);
           window.open(i5url, '_blank');
           try { window.close(); } catch(e) {}
-          setTimeout(() => { if(!document.hidden) showToast('Готово! Эту вкладку можно закрыть', '#1565c0'); }, 500);
-        }, 300); 
-        
+          setTimeout(() => { if(!document.hidden) showToast('Готово!', '#1565c0'); }, 500);
+        }, 300);
         return;
       }
     }
 
-    // Если нет журнала (открыто без ?jid=), отправляем в Worker
-    const data = b64enc(JSON.stringify(payload));
-    const res = await fetch(SHORT_URL + '/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ payload: data })
-    });
-    
-    if (!res.ok) throw new Error('Worker error: ' + res.status);
-    const j = await res.json();
-    if (!j.id) throw new Error('No id returned');
+    // Если журнала нет (открыли без JID) — создаем новую запись
+    if (window.CubicaJournal) {
+      const rec = window.CubicaJournal.create({ series: 'invoice' });
+      rec.type = 'armstrong';
+      rec.rows = flatRowsForI5;
+      rec.rooms = roomsForKp;
+      rec.meta = { 
+        L_in: currentLayout.L_in, 
+        W_in: currentLayout.W_in, 
+        area: currentLayout.areaM2, 
+        polygon: currentLayout.polygon || null 
+      };
 
-    window.open(KP_URL + '?s=' + j.id, '_blank');
-    try{ window.close(); }catch(e){}
-    setTimeout(function(){ if(!document.hidden) showToast('Готово! Эту вкладку можно закрыть', '#1565c0'); }, 500);
-    
+      window.CubicaJournal.save(rec, { assignNumber: false });
+      
+      setTimeout(() => {
+        const i5url = window.CubicaJournal.i5UrlForRecord(rec);
+        window.open(i5url, '_blank');
+        try { window.close(); } catch(e) {}
+      }, 300);
+    } else {
+      alert('Журнал не подключен. Невозможно сохранить данные.');
+    }
+
   } catch (e) {
-    console.error('Ошибка Worker:', e);
-    alert('Не удалось сформировать счёт: ' + e.message);
+    console.error(e);
+    alert('Ошибка: ' + e.message);
   } finally {
     btn.textContent = oldText;
     btn.disabled = false;
