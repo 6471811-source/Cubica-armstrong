@@ -1523,6 +1523,17 @@ updateLabels();
 renderProjectList();
 updateWorkLabel();
 calculate();
+  
+  kpBtn.addEventListener('click', async () => {
+  if(!currentLayout){alert('Сначала расчёт.');return;}
+  if(hasUnsavedChanges()){
+    const choice = await askUnsavedChanges(project[activeRoomIndex] ? project[activeRoomIndex].name : 'Новое помещение');
+    if(choice === 'cancel') return;
+    if(choice === 'save') saveRoomSilent();
+  }
+  await openKpPageViaWorker();
+});
+  
 })();
 </script>
 </body>
