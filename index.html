@@ -1447,15 +1447,32 @@ async function openKpPageViaWorker(){
       if(rec){
         rec.type = 'armstrong';
         rec.rooms = rooms;
-        rec.rows = rows.map(function(newR){
-          return {
-            label: newR.label,
-            qtyCalc: Number(newR.qty) || 0,
-            qtyReserve: 0,
-            unit: newR.unit || 'шт.',
-            price: 0
-          };
+
+        // ★ СБОРКА И СЖАТИЕ ДАННЫХ ДЛЯ I5 (как в Куботе)
+        const compressedRows = [];
+        const rowMap = {};
+
+        rooms.forEach(room => {
+          if (room.rows && room.rows.length) {
+            room.rows.forEach(r => {
+              const key = r.label + '|' + (r.unit || 'шт.');
+              if (rowMap[key]) {
+                rowMap[key].qtyCalc += Number(r.qty);
+              } else {
+                rowMap[key] = {
+                  label: r.label,
+                  qtyCalc: Number(r.qty) || 0,
+                  qtyReserve: 0,
+                  unit: r.unit || 'шт.',
+                  price: 0
+                };
+                compressedRows.push(rowMap[key]);
+              }
+            });
+          }
         });
+        
+        rec.rows = compressedRows;
         rec.meta = payload.meta;
 
         window.CubicaJournal.save(rec, {assignNumber:false});
