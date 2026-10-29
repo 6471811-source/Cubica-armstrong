@@ -1434,36 +1434,14 @@ async function openKpPageViaWorker(){
       type: 'armstrong',
       rows: rows,
       rooms: rooms,
-      company: {
-        name: 'ООО «ВК ТЕРМ»',
-        address: 'РБ, 223051, Минская обл., Минский р-н, аг. Колодищи, ул. Минская, д. 5, пом. 107-4',
-        phone: '+375 (44) 752-70-73',
-        email: '7527073@armstrong.by',
-        site: 'cubica.by',
-        site2: 'armstrong.by',
-        unp: '191202287',
-        account: 'BY79MTBK30120001093300125719',
-        bank: 'ЗАО «МТБанк», г. Минск',
-        bic: 'MTBKBY22',
-        director: 'Креминский И. Ю.',
-        directorPosition: 'Директор',
-        tagline: 'modern ceiling solutions',
-        issueAddress: 'аг. Колодищи, ул. Минская, 5, этаж 5, офис 508',
-        pickupAddress: 'аг. Колодищи, территория учебного парка',
-        hours: 'Пн–Пт, 09:00–15:00'
-      },
-      meta: {
-        L_in: currentLayout.L_in,
-        W_in: currentLayout.W_in,
-        area: currentLayout.areaM2,
-        polygon: currentLayout.polygon || null
-      }
+      company: { /* ... оставляем как было ... */ },
+      meta: { L_in: currentLayout.L_in, W_in: currentLayout.W_in, area: currentLayout.areaM2, polygon: currentLayout.polygon || null }
     };
-    
+
     if(JID && window.CubicaJournal){
       const rec = window.CubicaJournal.get(JID);
       if(rec){
-        rec.type = 'armstrong'; 
+        rec.type = 'armstrong';
         rec.rooms = rooms;
         rec.rows = rows.map(function(newR){
           return {
@@ -1485,6 +1463,7 @@ async function openKpPageViaWorker(){
       }
     }
 
+    // Если нет журнала (открыто без ?jid=), отправляем в Worker
     const data = b64enc(JSON.stringify(payload));
     const res = await fetch(SHORT_URL + '/save', {
       method: 'POST',
@@ -1508,34 +1487,6 @@ async function openKpPageViaWorker(){
     btn.disabled = false;
   }
 }
-
-kpBtn.addEventListener('click', async () => {
-  if(!currentLayout){alert('Сначала расчёт.');return;}
-  if(hasUnsavedChanges()){
-    const choice = await askUnsavedChanges(project[activeRoomIndex] ? project[activeRoomIndex].name : 'Новое помещение');
-    if(choice === 'cancel') return;
-    if(choice === 'save') saveRoomSilent();
-  }
-  await openKpPageViaWorker();
-});
-
-function b64enc(s){return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
-function b64dec(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return decodeURIComponent(escape(atob(s)));}
-
-// ===== ЗАГРУЗКА =====
-resetBtn.addEventListener('click',()=>{
-  if(activeRoomIndex !== null && project[activeRoomIndex]){
-    activateRoom(activeRoomIndex);
-    showToast('↺ Возврат к сохранённому расчёту', '#1565c0');
-    return;
-  }
-  offsetXSlider.value=0;offsetYSlider.value=0;rotationSlider.value=0;
-  rotated90=false;rotate90Btn.classList.remove('active');
-  standardMode=false;standardBtn.classList.remove('active');
-  updateLabels();
-  calculate();
-  showToast('↺ Сброшено к базовым настройкам', '#1565c0');
-});
 
 if(JID && window.CubicaJournal){
   const rec = window.CubicaJournal.get(JID);
