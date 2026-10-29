@@ -163,6 +163,8 @@ body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#222;backgrou
 </div>
 <div class="ac-options-row">
 <div class="ac-colors-title">Опции</div>
+<label class="ac-chk-inline" title="Плита 1200х600 (убирает 600-й профиль)"><input type="checkbox" id="ac-tile-1200"> Плита 1200×600</label>
+<label class="ac-chk-inline" title="Несущие 3600 каждые 600 мм"><input type="checkbox" id="ac-frame-rigid"> Жесткий каркас</label>
 <label class="ac-chk-inline"><input type="checkbox" id="ac-hangers" checked> Подвесы</label>
 <div class="ac-hanger-slider" id="ac-hanger-slider-wrap">
 <div class="ac-slider-head"><span>Высота</span></div>
@@ -264,6 +266,7 @@ const rotate90Btn=$('ac-rotate90'),standardBtn=$('ac-standard');
 const camResetBtn=$('ac-cam-reset'),save2dBtn=$('ac-save-2d'),save3dBtn=$('ac-save-3d');
 const showTilesChk=$('ac-show-tiles'),showCeilingChk=$('ac-show-ceiling');
 const hangersChk=$('ac-hangers'),hangerHInput=$('ac-hanger-h'),hangerHVal=$('ac-hanger-h-val'),hangerSliderWrap=$('ac-hanger-slider-wrap');
+const tile1200Chk=$('ac-tile-1200'),frameRigidChk=$('ac-frame-rigid');
 const specToggleEl=$('ac-spec-toggle');
 const projectListEl=$('ac-project-list'),projectCountEl=$('ac-project-count'),projectClearBtn=$('ac-project-clear');
 
@@ -382,6 +385,8 @@ function resetForNewRoom(){
   const savedStandard = standardMode;
   const savedHangers = hangersChk.checked;
   const savedHangerH = hangerHInput.value;
+  const savedTile1200 = tile1200Chk.checked;
+  const savedFrameRigid = frameRigidChk.checked;
 
   lengthInput.value=7350;
   widthInput.value=5600;
@@ -394,6 +399,8 @@ function resetForNewRoom(){
   rotate90Btn.classList.remove('active');
   hangersChk.checked = savedHangers;
   hangerHInput.value = savedHangerH;
+  tile1200Chk.checked = savedTile1200;
+  frameRigidChk.checked = savedFrameRigid;
   syncHangerUI();
   updateLabels();
 
@@ -602,7 +609,12 @@ const beams=[],tea600Y=[];
 for(let k=kMin;k<=kMax;k++){
 const y=yS+k*TILE_CELL;
 const m=((k%2)+2)%2;
-const isBeam = phase===1 ? m===0 : m===1;
+let isBeam;
+if(frameRigidChk.checked){
+  isBeam = true; // Жесткий каркас: несущие на каждой линии
+} else {
+  isBeam = phase===1 ? m===0 : m===1;
+}
 if(isBeam) beams.push(y); else tea600Y.push(y);
 }
 const xLineMin=vX[0],xLineMax=vX[vX.length-1];
@@ -637,11 +649,14 @@ return onWallByPoints(dx1,dy1,dx2,dy2);
 }
 const items=[];
 for(const yb of beams) items.push({type:3600,x:(xLineMin+xLineMax)/2,y:yb,len:xLineMax-xLineMin,ori:'h'});
-for(const yt of tea600Y){
-for(let j=0;j<vX.length-1;j++){
-const len=vX[j+1]-vX[j];if(len<=0.5) continue;
-items.push({type:600,x:(vX[j]+vX[j+1])/2,y:yt,len,ori:'h'});
-}
+// Если плита 1200х600 — НЕ ДОБАВЛЯЕМ 600-й профиль!
+if(!tile1200Chk.checked){
+  for(const yt of tea600Y){
+    for(let j=0;j<vX.length-1;j++){
+      const len=vX[j+1]-vX[j];if(len<=0.5) continue;
+      items.push({type:600,x:(vX[j]+vX[j+1])/2,y:yt,len,ori:'h'});
+    }
+  }
 }
 let warnWide=false;
 for(const band of bands){
@@ -729,6 +744,8 @@ layout2dDiv.innerHTML='';return;
 if(!roomPolygon && L_in < W_in){const _t=L_in;L_in=W_in;W_in=_t;}
 
 const offX_in=parseFloat(offsetXSlider.value),offY_in=parseFloat(offsetYSlider.value),rotationDeg=parseFloat(rotationSlider.value);
+const isTile1200 = !!tile1200Chk.checked;
+const isFrameRigid = !!frameRigidChk.checked;
 
 let L=L_in, W=W_in;
 if(roomPolygon){
@@ -747,10 +764,12 @@ let lay=layNormal;
 let ilyutikApplied=false;
 let n3600Normal=layNormal.n3600;
 let n3600Alternative=null;
-if(!standardMode){
-const layFlip=buildLayout(L,W,offsetX,offsetY,totalRot,L_in,W_in,1);
-n3600Alternative=layFlip.n3600;
-if(layFlip.n3600<layNormal.n3600){lay=layFlip;ilyutikApplied=true;}
+
+// Оптимизация (сдвиг несущих) актуальна только если каркас НЕ жесткий
+if(!standardMode && !isFrameRigid){
+  const layFlip=buildLayout(L,W,offsetX,offsetY,totalRot,L_in,W_in,1);
+  n3600Alternative=layFlip.n3600;
+  if(layFlip.n3600<layNormal.n3600){lay=layFlip;ilyutikApplied=true;}
 }
 
 const nMainPieces = lay.sum3600Length>0 ? Math.ceil(lay.sum3600Length/MAIN_LENGTH) : 0;
@@ -775,14 +794,19 @@ const angleFasteners=Math.ceil(perimeter/ANGLE_WALL_SPACING);
 const isHangers = !!hangersChk.checked;
 const hangerHeight = parseFloat(hangerHInput.value) || 0;
 
+const tileName = isTile1200 ? '1200х600' : '600х600';
 const specRows=[
 {label:'Площадь',value:areaM2.toFixed(2)+' м²',num:areaM2,kind:'area'},
-{label:'Плита потолочная 600х600х12 мм',value:tilesCount+' шт.',num:tilesCount,kind:'count',unit:'шт.'},
+{label:`Плита потолочная ${tileName}х12 мм`,value:tilesCount+' шт.',num:tilesCount,kind:'count',unit:'шт.'},
 {label:'Т-профиль 24х33х3600 Премиум белый',value:nMainPieces+' шт.',num:nMainPieces,kind:'count',color:'#d32f2f',unit:'шт.'},
 {label:'Т-профиль 24х26х1200 белый',value:lay.n1200+' шт.',num:lay.n1200,kind:'count',color:'#1976d2',unit:'шт.'},
-{label:'Т-профиль 24х20х600 Стандарт белый',value:lay.n600+' шт.',num:lay.n600,kind:'count',color:'#43a047',unit:'шт.'},
-{label:'Уголок пристеночный 19х19 (3м) белый',value:wallAnglePieces+' шт.',num:wallAnglePieces,kind:'count',unit:'шт.'}
 ];
+
+if (!isTile1200) {
+  specRows.push({label:'Т-профиль 24х20х600 Стандарт белый',value:lay.n600+' шт.',num:lay.n600,kind:'count',color:'#43a047',unit:'шт.'});
+}
+
+specRows.push({label:'Уголок пристеночный 19х19 (3м) белый',value:wallAnglePieces+' шт.',num:wallAnglePieces,kind:'count',unit:'шт.'});
 
 if (isHangers) {
   if (hangerHeight < 0.50) {
@@ -827,13 +851,15 @@ if(lay.n3600<1) warnings.push('⚠ Ни одной несущей — увели
 if(lay.warnWide) warnings.push('⚠ Полоса у стены > 1200 мм — рекомендуется промежуточная несущая.');
 if(rotationDeg!==0) warnings.push('⚠ При повороте раскладки количество элементов ориентировочное.');
 if(roomPolygon) warnings.push('✏️ Помещение начерчено: '+roomPolygon.length+' сторон. Площадь '+areaM2.toFixed(2)+' м².');
-if(standardMode) warnings.push('📐 Расчёт по техкарте 132-06 ТК: несущие на нечётных линиях сетки. Направляющих 3600 — '+n3600Normal+' шт.');
+if(isFrameRigid) warnings.push('🔧 Жесткий каркас: несущие 3600 на каждой линии (без 600-х профилей в пролетах).');
+else if(standardMode) warnings.push('📐 Расчёт по техкарте 132-06 ТК: несущие на нечётных линиях сетки. Направляющих 3600 — '+n3600Normal+' шт.');
 else if(ilyutikApplied) warnings.push('📐 Оптимизация: несущие на чётных линиях сетки. Направляющих 3600 — '+lay.n3600+' шт. (вместо '+n3600Normal+').');
 else warnings.push('📐 Оптимизация: перестановка не даёт выигрыша — обычное положение ('+n3600Normal+' шт.).');
 
 currentLayout={L,W,L_in,W_in,rotationDeg,rotated90,totalRot,lay,positionsX,
 nMainPieces,tilesCount,totalHangers,wallAnglePieces,angleFasteners,perimeter,areaM2,
 specRows,warnings,standardMode,ilyutikApplied,n3600Normal,n3600Alternative,
+tile1200: isTile1200, frameRigid: isFrameRigid,
 polygon:roomPolygon?roomPolygon.map(p=>[p[0],p[1]]):null};
 
 renderSpec();
@@ -843,7 +869,7 @@ if(threeInitialized) update3D();
 
 function drawLayout2D(){
 if(!currentLayout) return;
-const {L,W,L_in,W_in,lay,totalRot,polygon}=currentLayout;
+const {L,W,L_in,W_in,lay,totalRot,polygon,frameRigid,tile1200}=currentLayout;
 const {items,jMin,jMax,kMin,kMax,xS,yS}=lay;
 const Lreal=L_in,Wreal=W_in;
 const width=640,height=440,padding=60;
@@ -875,9 +901,14 @@ svg+='<rect x="'+ox+'" y="'+oy+'" width="'+drawWidth+'" height="'+drawHeight+'" 
 
 svg+='<g clip-path="url(#ac-room-clip)"><g transform="translate('+roomCx+' '+roomCy+') rotate('+totalRot+') translate('+(-gridCx)+' '+(-gridCy)+')">';
 const gap=(TILE_CELL-TILE_PANEL)/2;
-for(let k=kMin;k<=kMax;k++) for(let j=jMin;j<=jMax;j++){
-const cx=xS+j*TILE_CELL+gap,cy=yS+k*TILE_CELL+gap;
-svg+='<rect x="'+(cx*s)+'" y="'+(cy*s)+'" width="'+(TILE_PANEL*s)+'" height="'+(TILE_PANEL*s)+'" fill="#fbfbfb" stroke="#e2e2e2" stroke-width="0.6"/>';
+const stepX = tile1200 ? 1200 : 600;
+for(let k=kMin;k<=kMax;k++) {
+  for(let j=jMin;j<=jMax;j++){
+    const cx=xS+j*TILE_CELL+gap;
+    const cy=yS+k*TILE_CELL+gap;
+    const tileW = tile1200 ? 1190 : 595;
+    svg+='<rect x="'+(cx*s)+'" y="'+(cy*s)+'" width="'+(tileW*s)+'" height="'+(TILE_PANEL*s)+'" fill="#fbfbfb" stroke="#e2e2e2" stroke-width="0.6"/>';
+  }
 }
 for(const it of items){
 let col,sw;
@@ -966,7 +997,7 @@ return g;
 }
 function update3D(){
 if(!threeInitialized||!currentLayout)return;
-const {L,W,L_in,W_in,lay,positionsX,totalRot,polygon}=currentLayout;
+const {L,W,L_in,W_in,lay,positionsX,totalRot,polygon,frameRigid,tile1200}=currentLayout;
 const {items,jMin,jMax,kMin,kMax,xS,yS,beams}=lay;
 const LmRoom=L_in/1000,WmRoom=W_in/1000;
 const Lm=L/1000,Wm=W/1000;
@@ -1022,26 +1053,34 @@ threeScene.add(threeCeilingMesh);
 
 const plateGeo=boxGeo(panelM,PLATE_T,panelM);plateGeo.__cached=true;
 const gapM=(TILE_CELL-TILE_PANEL)/2000,plateY=FLANGE_H+PLATE_T/2;
-for(let k=kMin;k<=kMax;k++) for(let j=jMin;j<=jMax;j++){
-const xg=(xS+j*TILE_CELL)/1000+gapM+panelM/2;
-const zg=(yS+k*TILE_CELL)/1000+gapM+panelM/2;
-let lx, lz;
-if(polygon){
-  const dxw = xg*1000 - L/2, dyw = zg*1000 - W/2;
-  const dispX = dxw*cosA - dyw*sinA + L_in/2;
-  const dispY = dxw*sinA + dyw*cosA + W_in/2;
-  if(!pointInPoly(polygon, dispX, dispY)) continue;
-  const dxp = dispX/1000 - LmRoom/2;
-  const dzp = dispY/1000 - WmRoom/2;
-  lx = dxp*cosA + dzp*sinA;
-  lz = -dxp*sinA + dzp*cosA;
-} else {
-  const p=toLoc(xg,zg); lx=p[0]; lz=p[1];
-}
-const mesh=new THREE.Mesh(plateGeo,mPlate);
-mesh.position.set(lx,plateY,lz);
-mesh.userData={title:'Плита Cubica',size:TILE_PANEL+' × '+TILE_PANEL+' × 12 мм',qty:'—',spacing:'ячейка 600×600 мм'};
-threeTilesGroup.add(mesh);
+for(let k=kMin;k<=kMax;k++) {
+  for(let j=jMin;j<=jMax;j++){
+    const xg=(xS+j*TILE_CELL)/1000+gapM+panelM/2;
+    const zg=(yS+k*TILE_CELL)/1000+gapM+panelM/2;
+    let lx, lz;
+    if(polygon){
+      const dxw = xg*1000 - L/2, dyw = zg*1000 - W/2;
+      const dispX = dxw*cosA - dyw*sinA + L_in/2;
+      const dispY = dxw*sinA + dyw*cosA + W_in/2;
+      if(!pointInPoly(polygon, dispX, dispY)) continue;
+      const dxp = dispX/1000 - LmRoom/2;
+      const dzp = dispY/1000 - WmRoom/2;
+      lx = dxp*cosA + dzp*sinA;
+      lz = -dxp*sinA + dzp*cosA;
+    } else {
+      const p=toLoc(xg,zg); lx=p[0]; lz=p[1];
+    }
+    // Если плита 1200х600, пропускаем каждую вторую плиту (склеиваем)
+    if (tile1200 && (j % 2 !== 0)) continue; 
+    
+    const plateW = tile1200 ? (panelM * 2) : panelM;
+    const pGeo = boxGeo(plateW, PLATE_T, panelM);
+    pGeo.__cached = true;
+    const mesh=new THREE.Mesh(pGeo,mPlate);
+    mesh.position.set(lx,plateY,lz);
+    mesh.userData={title:'Плита Cubica',size:tile1200 ? '1200 × 600 × 12 мм' : '600 × 600 × 12 мм',qty:'—',spacing:'ячейка 600×600 мм'};
+    threeTilesGroup.add(mesh);
+  }
 }
 const ud3600={title:'Направляющая 3600',size:MAIN_LENGTH+' × 24 × 30 мм',qty:'—',spacing:'шаг 1200 мм между осями'};
 const ud1200={title:'Направляющая 1200',size:'1200 × 24 × 25 мм',qty:'—',spacing:'между парами несущих'};
@@ -1189,6 +1228,8 @@ L_in:currentLayout.L_in,W_in:currentLayout.W_in,
 offsetX:parseFloat(offsetXSlider.value),offsetY:parseFloat(offsetYSlider.value),
 rotationDeg:parseFloat(rotationSlider.value),rotated90:rotated90,
 standardMode:standardMode,
+tile1200:!!tile1200Chk.checked,
+frameRigid:!!frameRigidChk.checked,
 polygon:roomPolygon?roomPolygon.map(p=>[p[0],p[1]]):null,
 specRows:currentLayout.specRows.map(r=>({...r}))
 };
@@ -1235,6 +1276,8 @@ projectListEl.innerHTML=project.map((p,i)=>{
 const active=(i===activeRoomIndex)?' active':'';
 let mark='';
 if(p.standardMode) mark+=' 📐';
+if(p.tile1200) mark+=' 🟦';
+if(p.frameRigid) mark+=' 🛠️';
 if(p.polygon) mark+=' ✏️';
 return '<li class="ac-pji'+active+'" data-idx="'+i+'" title="Нажмите, чтобы загрузить"><span class="ac-pjn">'+p.name+mark+'</span><span class="ac-pjd">'+p.L_in+' × '+p.W_in+' мм</span><button type="button" class="ac-pjx" data-idx="'+i+'" title="Удалить">✕</button></li>';
 }).join('');
@@ -1264,6 +1307,8 @@ offsetXSlider.value=r.offsetX;offsetYSlider.value=r.offsetY;
 rotationSlider.value=r.rotationDeg;
 rotated90=!!r.rotated90;rotate90Btn.classList.toggle('active',rotated90);
 standardMode=!!r.standardMode;standardBtn.classList.toggle('active',standardMode);
+tile1200Chk.checked=!!r.tile1200;
+frameRigidChk.checked=!!r.frameRigid;
 roomPolygon=r.polygon?r.polygon.map(p=>[p[0],p[1]]):null;
 updateLabels();calculate();
 specMode='current';
@@ -1348,6 +1393,10 @@ if(threeCeilingMesh)threeCeilingMesh.visible=showCeilingChk.checked;
 hangersChk.addEventListener('change',()=>{syncHangerUI();calculate();});
 hangerHInput.addEventListener('input',()=>{syncHangerUI();calculate();});
 
+// НОВЫЕ ГАЛОЧКИ
+tile1200Chk.addEventListener('change',()=>{calculate();});
+frameRigidChk.addEventListener('change',()=>{calculate();});
+
 // ===== РЕДАКТОР КОНТУРА =====
 const drawModal=$('ac-draw-modal'),drawCanvas=$('ac-draw-canvas'),drawCtx=drawCanvas.getContext('2d');
 const drawUndoBtn=$('ac-draw-undo'),drawCloseContourBtn=$('ac-draw-close-contour'),drawClearBtn=$('ac-draw-clear');
@@ -1397,7 +1446,7 @@ drawOpenBtn.addEventListener('click',()=>{stopEdgeStretch();if(roomPolygon){cons
 function renderSegmentList(){if(drawSegments.length===0){segListEl.innerHTML='<div class="ac-seg-empty">Пока нет ни одной стены.</div>';return;}segListEl.innerHTML=drawSegments.map((s,i)=>{let arrow='',lbl='';if(s.axis==='x'){arrow=s.sign>0?'→':'←';lbl='Стена '+(i+1)+' (гориз.)';}else{arrow=s.sign>0?'↓':'↑';lbl='Стена '+(i+1)+' (верт.)';}return '<div class="ac-seg-row"><span class="arrow">'+arrow+'</span><span class="lbl">'+lbl+'</span><input type="number" value="'+s.len+'" step="100" min="100" data-idx="'+i+'"><span>мм</span></div>';}).join('');segListEl.querySelectorAll('input').forEach(inp=>{inp.addEventListener('input',()=>{const idx=parseInt(inp.dataset.idx,10);const v=Math.max(100,parseFloat(inp.value)||100);drawSegments[idx].len=v;if(drawClosed){const p=walkPoints();const first=p[0],last=p[p.length-1];if(Math.abs(last[0]-first[0])>1||Math.abs(last[1]-first[1])>1){drawClosed=false;autoAddedCount=0;drawApplyBtn.disabled=true;}}redrawDraw();updateModalWarn();updateDrawHud();});});}
 
 // ===== i5/KP =====
-  function b64enc(s){
+function b64enc(s){
   return btoa(unescape(encodeURIComponent(s)))
     .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 }
@@ -1408,85 +1457,57 @@ async function openKpPageViaWorker(){
   btn.disabled = true;
 
   try {
-    // 1. Берем источники данных (все сохраненные помещения или текущий черновик)
-    const srcRooms = project.length > 0 ? project : [{ 
-      name: 'Помещение 1', 
-      L_in: currentLayout.L_in, 
-      W_in: currentLayout.W_in, 
-      areaM2: currentLayout.areaM2, 
-      specRows: currentLayout.specRows 
-    }];
-
-    // 2. Формируем массив rooms (ДЛЯ КП - с разбивкой по помещениям)
-    const roomsForKp = srcRooms.map((room, i) => {
-      const roomRows = [];
-      if (room.specRows) {
-        for (const r of room.specRows) {
-          // Берем все, кроме площади
-          if (r && r.kind !== 'area' && Number(r.num) > 0) {
-            roomRows.push({
-              label: String(r.label || ''),
-              qty: Number(r.num),
-              unit: r.unit || 'шт.'
-            });
-          }
-        }
-      }
-      return {
-        name: room.name || ('Помещение ' + (i + 1)),
-        L_in: room.L_in,
-        W_in: room.W_in,
-        areaM2: room.areaM2 || 0,
-        rows: roomRows
-      };
-    });
-
-    // 3. Формируем плоский список rows (ДЛЯ i5 - сжатый)
-    const flatRowsForI5 = [];
-    const seen = {};
-
-    for (const room of roomsForKp) {
-      for (const r of room.rows) {
-        const key = r.label + '|' + r.unit;
-        if (seen[key]) {
-          seen[key].qtyCalc += r.qty;
-        } else {
-          const newRow = {
-            label: r.label,
-            qtyCalc: r.qty,
-            qtyReserve: 0,
-            unit: r.unit,
-            price: 0
-          };
-          seen[key] = newRow;
-          flatRowsForI5.push(newRow);
-        }
+    // 1. Собираем строки напрямую с экрана (из currentLayout)
+    const finalRows = [];
+    if (currentLayout && currentLayout.specRows) {
+      for (const r of currentLayout.specRows) {
+        if (!r || r.kind === 'area') continue;
+        const qty = Number(r.num) || 0;
+        if (qty <= 0) continue;
+        finalRows.push({
+          label: String(r.label || ''),
+          qtyCalc: qty,
+          qtyReserve: 0,
+          unit: r.unit || 'шт.',
+          price: 0
+        });
       }
     }
 
-    // 4. Проверка, что данные есть
-    if (flatRowsForI5.length === 0) {
-      alert('Ошибка: нет данных для отправки. Сначала сделайте расчёт.');
+    // 2. Проверяем, что-то собрали?
+    if (finalRows.length === 0) {
+      alert('Ошибка: в текущем помещении нет позиций для отправки. Сначала выполните расчёт.');
       return;
     }
 
-    // 5. Сохраняем в журнал
+    // 3. Формируем комнаты для КП
+    const roomsForKp = project.length > 0 ? project.map(p => {
+      return {
+        name: p.name,
+        L_in: p.L_in,
+        W_in: p.W_in,
+        areaM2: p.areaM2 || 0,
+        rows: p.specRows.filter(r => r.kind !== 'area').map(r => ({ label: r.label, qty: r.num, unit: r.unit }))
+      };
+    }) : [{
+      name: 'Помещение',
+      L_in: currentLayout.L_in,
+      W_in: currentLayout.W_in,
+      areaM2: currentLayout.areaM2,
+      rows: finalRows.map(r => ({ label: r.label, qty: r.qtyCalc, unit: r.unit }))
+    }];
+
+    // 4. Если есть JID — сохраняем в существующую запись
     if (JID && window.CubicaJournal) {
       const rec = window.CubicaJournal.get(JID);
       if (rec) {
         rec.type = 'armstrong';
-        rec.rows = flatRowsForI5;      // Для i5
-        rec.rooms = roomsForKp;        // Для КП
-        rec.meta = { 
-          L_in: currentLayout.L_in, 
-          W_in: currentLayout.W_in, 
-          area: currentLayout.areaM2, 
-          polygon: currentLayout.polygon || null 
-        };
-
+        rec.rows = finalRows;
+        rec.rooms = roomsForKp;
+        rec.meta = { L_in: currentLayout.L_in, W_in: currentLayout.W_in, area: currentLayout.areaM2, polygon: currentLayout.polygon || null };
+        
         window.CubicaJournal.save(rec, { assignNumber: false });
         
-        // Открываем i5
         setTimeout(() => {
           const i5url = window.CubicaJournal.i5UrlForRecord(rec);
           window.open(i5url, '_blank');
@@ -1497,19 +1518,14 @@ async function openKpPageViaWorker(){
       }
     }
 
-    // Если журнала нет (открыли без JID) — создаем новую запись
+    // 5. Если JID нет (запасной вариант) — создаём новую запись
     if (window.CubicaJournal) {
       const rec = window.CubicaJournal.create({ series: 'invoice' });
       rec.type = 'armstrong';
-      rec.rows = flatRowsForI5;
+      rec.rows = finalRows;
       rec.rooms = roomsForKp;
-      rec.meta = { 
-        L_in: currentLayout.L_in, 
-        W_in: currentLayout.W_in, 
-        area: currentLayout.areaM2, 
-        polygon: currentLayout.polygon || null 
-      };
-
+      rec.meta = { L_in: currentLayout.L_in, W_in: currentLayout.W_in, area: currentLayout.areaM2, polygon: currentLayout.polygon || null };
+      
       window.CubicaJournal.save(rec, { assignNumber: false });
       
       setTimeout(() => {
@@ -1520,7 +1536,6 @@ async function openKpPageViaWorker(){
     } else {
       alert('Журнал не подключен. Невозможно сохранить данные.');
     }
-
   } catch (e) {
     console.error(e);
     alert('Ошибка: ' + e.message);
@@ -1575,7 +1590,26 @@ calculate();
   }
   await openKpPageViaWorker();
 });
-  
+
+// Восстанавливаем кнопку сброса
+resetBtn.addEventListener('click',()=>{
+  if(activeRoomIndex !== null && project[activeRoomIndex]){
+    activateRoom(activeRoomIndex);
+    showToast('↺ Возврат к сохранённому расчёту', '#1565c0');
+    return;
+  }
+  railWInput.value=30;railHInput.value=30;gapInput.value=20;rotationInput.value=0;
+  updateSliderLabels();updateAdjustLabels();
+  setActiveColor('ral9003');
+  capsChk.checked=false;angleChk.checked=false;hangersChk.checked=false;
+  hangerHInput.value=0;stringerPaintChk.checked=false;
+  syncHangerUI();
+  params.rotate90=false;updateRotate90UI();
+  mergedCutsSet={};mergedResult=null;
+  calculate();
+  showToast('↺ Сброшено к базовым настройкам', '#1565c0');
+});
+
 })();
 </script>
 </body>
