@@ -618,25 +618,38 @@ for(let k=kMin;k<=kMax;k++){
   if(isBeam) beams.push(y); else tea600Y.push(y);
 }
 
-// ★★★ ЛОГИКА ДЛЯ ТЕХКАРТЫ: ДОБАВЛЯЕМ НЕСУЩИЕ К СТЕНАМ, ЕСЛИ НУЖНО ★★★
+// ★★★ ЛОГИКА ДЛЯ ТЕХКАРТЫ: ПРЕВРАЩАЕМ ЗЕЛЕНУЮ В КРАСНУЮ ★★★
 if (standardMode) {
   const beamsInRoom = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
   if (beamsInRoom.length > 0) {
     const firstBeam = beamsInRoom[0];
-    const lastBeam = beamsInRoom[beamsInRoom.length - 1];
     
-    // Проверка снизу (yWallTop)
+    // Если от нижней стены до первой несущей больше 600 мм
     if (firstBeam - yWallTop > 600) {
-      beams.push(yWallTop + 550); 
+      // Ищем ближайшую зеленую линию (600) к этой стене
+      const targetTea600Y = tea600Y.find(y => y > yWallTop + 100 && y < firstBeam - 100);
+      
+      if (targetTea600Y !== undefined) {
+        // Удаляем её из зеленых
+        tea600Y = tea600Y.filter(y => y !== targetTea600Y);
+        // Добавляем её в красные (несущие)
+        beams.push(targetTea600Y);
+      }
     }
     
-    // Проверка сверху (yWallBot)
+    // Такая же проверка для верхней стены (на всякий случай, для симметрии)
+    const lastBeam = beamsInRoom[beamsInRoom.length - 1];
     if (yWallBot - lastBeam > 600) {
-      beams.push(yWallBot - 550);
+      const targetTea600Top = tea600Y.find(y => y > lastBeam + 100 && y < yWallBot - 100);
+      if (targetTea600Top !== undefined) {
+        tea600Y = tea600Y.filter(y => y !== targetTea600Top);
+        beams.push(targetTea600Top);
+      }
     }
     
-    // Сортируем, чтобы новая несущая встала на свое место в массиве
+    // Сортируем массивы, чтобы сетка шла ровно
     beams.sort((a, b) => a - b);
+    tea600Y.sort((a, b) => a - b);
   }
 }
 // ★★★ КОНЕЦ ЛОГИКИ ★★★
