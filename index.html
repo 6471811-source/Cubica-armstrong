@@ -623,23 +623,19 @@ if (standardMode) {
   const beamsInRoom = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
   if (beamsInRoom.length > 0) {
     const firstBeam = beamsInRoom[0];
+    const lastBeam = beamsInRoom[beamsInRoom.length - 1];
     
-    // Если от нижней стены до первой несущей больше 600 мм
-    if (firstBeam - yWallTop > 600) {
-      // Ищем ближайшую зеленую линию (600) к этой стене
+    // Проверка снизу: если отступ >= 600 (исправлено!)
+    if (firstBeam - yWallTop >= 600) {
       const targetTea600Y = tea600Y.find(y => y > yWallTop + 100 && y < firstBeam - 100);
-      
       if (targetTea600Y !== undefined) {
-        // Удаляем её из зеленых
         tea600Y = tea600Y.filter(y => y !== targetTea600Y);
-        // Добавляем её в красные (несущие)
         beams.push(targetTea600Y);
       }
     }
     
-    // Такая же проверка для верхней стены (на всякий случай, для симметрии)
-    const lastBeam = beamsInRoom[beamsInRoom.length - 1];
-    if (yWallBot - lastBeam > 600) {
+    // Проверка сверху: если отступ >= 600 (исправлено!)
+    if (yWallBot - lastBeam >= 600) {
       const targetTea600Top = tea600Y.find(y => y > lastBeam + 100 && y < yWallBot - 100);
       if (targetTea600Top !== undefined) {
         tea600Y = tea600Y.filter(y => y !== targetTea600Top);
@@ -647,7 +643,6 @@ if (standardMode) {
       }
     }
     
-    // Сортируем массивы, чтобы сетка шла ровно
     beams.sort((a, b) => a - b);
     tea600Y.sort((a, b) => a - b);
   }
