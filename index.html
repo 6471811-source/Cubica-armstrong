@@ -618,34 +618,38 @@ for(let k=kMin;k<=kMax;k++){
   if(isBeam) beams.push(y); else tea600Y.push(y);
 }
 
-// ★★★ ЛОГИКА ДЛЯ ТЕХКАРТЫ: ПРЕВРАЩАЕМ ЗЕЛЕНУЮ В КРАСНУЮ ★★★
+// ★★★ ЛОГИКА ДЛЯ ТЕХКАРТЫ ★★★
 if (standardMode) {
-  const beamsInRoom = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
-  if (beamsInRoom.length > 0) {
-    const firstBeam = beamsInRoom[0];
-    const lastBeam = beamsInRoom[beamsInRoom.length - 1];
-    
-    // Проверка снизу: если отступ >= 600 (исправлено!)
+  // Проверка снизу
+  const beamsInRoomBottom = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
+  if (beamsInRoomBottom.length > 0) {
+    const firstBeam = beamsInRoomBottom[0];
     if (firstBeam - yWallTop >= 600) {
-      const targetTea600Y = tea600Y.find(y => y > yWallTop + 100 && y < firstBeam - 100);
-      if (targetTea600Y !== undefined) {
-        tea600Y = tea600Y.filter(y => y !== targetTea600Y);
-        beams.push(targetTea600Y);
+      // Ищем любую зеленую линию между стеной и первой красной
+      const targetBottom = tea600Y.find(y => y > yWallTop - 0.5 && y < firstBeam - 0.5);
+      if (targetBottom !== undefined) {
+        tea600Y = tea600Y.filter(y => Math.abs(y - targetBottom) > 0.5);
+        beams.push(targetBottom);
       }
     }
-    
-    // Проверка сверху: если отступ >= 600 (исправлено!)
-    if (yWallBot - lastBeam >= 600) {
-      const targetTea600Top = tea600Y.find(y => y > lastBeam + 100 && y < yWallBot - 100);
-      if (targetTea600Top !== undefined) {
-        tea600Y = tea600Y.filter(y => y !== targetTea600Top);
-        beams.push(targetTea600Top);
-      }
-    }
-    
-    beams.sort((a, b) => a - b);
-    tea600Y.sort((a, b) => a - b);
   }
+  
+  // Проверка сверху
+  const beamsInRoomTop = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
+  if (beamsInRoomTop.length > 0) {
+    const lastBeam = beamsInRoomTop[beamsInRoomTop.length - 1];
+    if (yWallBot - lastBeam >= 600) {
+      // Ищем любую зеленую линию между последней красной и стеной
+      const targetTop = tea600Y.find(y => y > lastBeam + 0.5 && y < yWallBot + 0.5);
+      if (targetTop !== undefined) {
+        tea600Y = tea600Y.filter(y => Math.abs(y - targetTop) > 0.5);
+        beams.push(targetTop);
+      }
+    }
+  }
+  
+  beams.sort((a, b) => a - b);
+  tea600Y.sort((a, b) => a - b);
 }
 // ★★★ КОНЕЦ ЛОГИКИ ★★★
 
@@ -681,7 +685,6 @@ return onWallByPoints(dx1,dy1,dx2,dy2);
 }
 const items=[];
 for(const yb of beams) items.push({type:3600,x:(xLineMin+xLineMax)/2,y:yb,len:xLineMax-xLineMin,ori:'h'});
-// Если плита 1200х600 — НЕ ДОБАВЛЯЕМ 600-й профиль!
 if(!tile1200Chk.checked){
   for(const yt of tea600Y){
     for(let j=0;j<vX.length-1;j++){
