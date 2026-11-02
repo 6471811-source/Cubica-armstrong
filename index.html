@@ -618,44 +618,47 @@ for(let k=kMin;k<=kMax;k++){
   if(isBeam) beams.push(y); else tea600Y.push(y);
 }
 
-// ★★★ ЛОГИКА ДЛЯ ТЕХКАРТЫ ★★★
+// ★★★ ЛОГИКА ДЛЯ ТЕХКАРТЫ (ЗАМЕНА ЗЕЛЕНОЙ НА КРАСНУЮ У СТЕН) ★★★
 if (standardMode) {
-  // 1. Собираем ВСЕ существующие линии (красные + зеленые)
-  let allLines = [...beams, ...tea600Y].sort((a,b)=>a-b);
-
-  // 2. Проверка СНИЗУ
-  const beamsInRoomBottom = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
-  if (beamsInRoomBottom.length > 0) {
-    const firstBeam = beamsInRoomBottom[0];
+  // 1. Проверка СНИЗУ
+  const beamsBottom = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
+  if (beamsBottom.length > 0) {
+    const firstBeam = beamsBottom[0];
+    // Если от стены до первой красной >= 600
     if (firstBeam - yWallTop >= 600) {
-      // Ищем ЛЮБУЮ линию между стеной и первой красной
-      const targetBottom = allLines.find(y => y > yWallTop + 0.5 && y < firstBeam - 0.5);
+      // Ищем зеленую линию между стеной и первой красной
+      const targetBottom = tea600Y.find(y => y > yWallTop + 0.5 && y < firstBeam - 0.5);
       if (targetBottom !== undefined) {
-        // Если нашли — удаляем её из зеленых (если она там была) и из красных
+        // Удаляем её из зеленых
         tea600Y = tea600Y.filter(y => Math.abs(y - targetBottom) > 0.5);
+        // Удаляем её из красных (на случай если она уже там)
         beams = beams.filter(y => Math.abs(y - targetBottom) > 0.5);
-        // И добавляем в красные
+        // Добавляем только в красные
         beams.push(targetBottom);
       }
     }
   }
 
-  // 3. Проверка СВЕРХУ
-  const beamsInRoomTop = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
-  if (beamsInRoomTop.length > 0) {
-    const lastBeam = beamsInRoomTop[beamsInRoomTop.length - 1];
+  // 2. Проверка СВЕРХУ
+  const beamsTop = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
+  if (beamsTop.length > 0) {
+    const lastBeam = beamsTop[beamsTop.length - 1];
+    // Если от последней красной до стены >= 600
     if (yWallBot - lastBeam >= 600) {
-      // Ищем ЛЮБУЮ линию между последней красной и стеной
-      const targetTop = allLines.find(y => y > lastBeam + 0.5 && y < yWallBot - 0.5);
+      // Ищем зеленую линию между последней красной и стеной
+      const targetTop = tea600Y.find(y => y > lastBeam + 0.5 && y < yWallBot - 0.5);
       if (targetTop !== undefined) {
+        // Удаляем её из зеленых
         tea600Y = tea600Y.filter(y => Math.abs(y - targetTop) > 0.5);
+        // Удаляем её из красных
         beams = beams.filter(y => Math.abs(y - targetTop) > 0.5);
+        // Добавляем только в красные
         beams.push(targetTop);
       }
     }
   }
 
-  // 4. Сортируем
+  // 3. Сортируем оба массива
   beams.sort((a, b) => a - b);
   tea600Y.sort((a, b) => a - b);
 }
