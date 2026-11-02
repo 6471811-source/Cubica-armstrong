@@ -618,37 +618,65 @@ for(let k=kMin;k<=kMax;k++){
   if(isBeam) beams.push(y); else tea600Y.push(y);
 }
 
-// ★★★ ЛОГИКА ДЛЯ ТЕХКАРТЫ (ЗАМЕНА ЗЕЛЕНОЙ НА КРАСНУЮ У СТЕН) ★★★
+// ★★★ ЛОГИКА ДЛЯ ТЕХКАРТЫ (ПРОСТАЯ: БЛИЖАЙШАЯ ЛИНИЯ = КРАСНАЯ) ★★★
 if (standardMode) {
-  // 1. Проверка СНИЗУ
-  const beamsBottom = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
-  if (beamsBottom.length > 0) {
-    const firstBeam = beamsBottom[0];
-    if (firstBeam - yWallTop >= 600) {
-      const targetBottom = tea600Y.find(y => y > yWallTop + 0.5 && y < firstBeam - 0.5);
-      if (targetBottom !== undefined) {
-        tea600Y = tea600Y.filter(y => Math.abs(y - targetBottom) > 0.5);
-        beams = beams.filter(y => Math.abs(y - targetBottom) > 0.5);
-        beams.push(targetBottom);
+  // 1. Собираем ВСЕ линии (зеленые + красные) и сортируем
+  let allLines = [...beams, ...tea600Y].sort((a,b)=>a-b);
+  
+  // 2. Если линий нет, выходим
+  if (allLines.length > 0) {
+    
+    // --- СНИЗУ ---
+    // Берем первую линию снизу (ближайшую к нижней стене)
+    const closestBottom = allLines[0];
+    
+    // Если расстояние от стены до неё больше или равно 600
+    if (closestBottom - yWallTop >= 600) {
+      // Значит, она не годится. Берем следующую (которая должна быть красной)
+      // На самом деле, если ближайшая >= 600, значит, это и есть та линия, которую надо сделать красной?
+      // Нет, стоп. Если ближайшая >= 600, значит, ДО неё нет линий. 
+      // Значит, нам нужно СДЕЛАТЬ ЕЕ КРАСНОЙ.
+      // (Если она уже красная, то ничего не делаем).
+    }
+    
+    // Давай по-другому: просто проходим по всем линиям от стены вверх.
+    // Первая линия, которая встретится, должна быть красной.
+    // Если она не красная (нет в массиве beams), делаем её красной.
+    
+    // Находим ближайшую линию к нижней стене
+    let bottomLine = null;
+    for (let y of allLines) {
+      if (y > yWallTop - 0.5) { bottomLine = y; break; }
+    }
+    
+    if (bottomLine !== null) {
+      // Проверяем, красная ли она
+      let isRed = beams.some(b => Math.abs(b - bottomLine) < 0.5);
+      if (!isRed) {
+        // Если не красная, удаляем из зеленых и делаем красной
+        tea600Y = tea600Y.filter(y => Math.abs(y - bottomLine) > 0.5);
+        beams.push(bottomLine);
+      }
+    }
+    
+    // --- СВЕРХУ ---
+    // Находим ближайшую линию к верхней стене
+    let topLine = null;
+    for (let i = allLines.length - 1; i >= 0; i--) {
+      let y = allLines[i];
+      if (y < yWallBot + 0.5) { topLine = y; break; }
+    }
+    
+    if (topLine !== null) {
+      let isRed = beams.some(b => Math.abs(b - topLine) < 0.5);
+      if (!isRed) {
+        tea600Y = tea600Y.filter(y => Math.abs(y - topLine) > 0.5);
+        beams.push(topLine);
       }
     }
   }
-
-  // 2. Проверка СВЕРХУ
-  const beamsTop = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
-  if (beamsTop.length > 0) {
-    const lastBeam = beamsTop[beamsTop.length - 1];
-    if (yWallBot - lastBeam >= 600) {
-      const targetTop = tea600Y.find(y => y > lastBeam + 0.5 && y < yWallBot - 0.5);
-      if (targetTop !== undefined) {
-        tea600Y = tea600Y.filter(y => Math.abs(y - targetTop) > 0.5);
-        beams = beams.filter(y => Math.abs(y - targetTop) > 0.5);
-        beams.push(targetTop);
-      }
-    }
-  }
-
-  // 3. Сортируем массивы
+  
+  // 3. Сортируем
   beams.sort((a, b) => a - b);
   tea600Y.sort((a, b) => a - b);
 }
