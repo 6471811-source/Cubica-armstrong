@@ -618,36 +618,42 @@ for(let k=kMin;k<=kMax;k++){
   if(isBeam) beams.push(y); else tea600Y.push(y);
 }
 
-// ★★★ ЛОГИКА ДЛЯ ТЕХКАРТЫ ★★★
+// ★★★ ЛОГИКА ДЛЯ ТЕХКАРТЫ (ПОИСК ЛЮБОЙ ЛИНИИ У СТЕНЫ) ★★★
 if (standardMode) {
-  // Проверка снизу
+  // 1. Собираем ВСЕ линии (и красные, и зеленые)
+  let allLines = [...beams, ...tea600Y].sort((a,b)=>a-b);
+
+  // 2. Проверка СНИЗУ
   const beamsInRoomBottom = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
   if (beamsInRoomBottom.length > 0) {
     const firstBeam = beamsInRoomBottom[0];
     if (firstBeam - yWallTop >= 600) {
-      // Ищем любую зеленую линию между стеной и первой красной
-      const targetBottom = tea600Y.find(y => y > yWallTop - 0.5 && y < firstBeam - 0.5);
+      // Ищем любую линию (в allLines) между стеной и первой красной
+      const targetBottom = allLines.find(y => y > yWallTop + 0.5 && y < firstBeam - 0.5);
       if (targetBottom !== undefined) {
+        // Если нашли — удаляем её из зеленых (если она там была)
         tea600Y = tea600Y.filter(y => Math.abs(y - targetBottom) > 0.5);
+        // И добавляем в красные
         beams.push(targetBottom);
       }
     }
   }
-  
-  // Проверка сверху
+
+  // 3. Проверка СВЕРХУ
   const beamsInRoomTop = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
   if (beamsInRoomTop.length > 0) {
     const lastBeam = beamsInRoomTop[beamsInRoomTop.length - 1];
     if (yWallBot - lastBeam >= 600) {
-      // Ищем любую зеленую линию между последней красной и стеной
-      const targetTop = tea600Y.find(y => y > lastBeam + 0.5 && y < yWallBot + 0.5);
+      // Ищем любую линию (в allLines) между последней красной и стеной
+      const targetTop = allLines.find(y => y > lastBeam + 0.5 && y < yWallBot - 0.5);
       if (targetTop !== undefined) {
         tea600Y = tea600Y.filter(y => Math.abs(y - targetTop) > 0.5);
         beams.push(targetTop);
       }
     }
   }
-  
+
+  // 4. Сортируем, чтобы всё встало на места
   beams.sort((a, b) => a - b);
   tea600Y.sort((a, b) => a - b);
 }
