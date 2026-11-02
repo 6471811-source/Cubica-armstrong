@@ -624,16 +624,11 @@ if (standardMode) {
   const beamsBottom = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
   if (beamsBottom.length > 0) {
     const firstBeam = beamsBottom[0];
-    // Если от стены до первой красной >= 600
     if (firstBeam - yWallTop >= 600) {
-      // Ищем зеленую линию между стеной и первой красной
       const targetBottom = tea600Y.find(y => y > yWallTop + 0.5 && y < firstBeam - 0.5);
       if (targetBottom !== undefined) {
-        // Удаляем её из зеленых
         tea600Y = tea600Y.filter(y => Math.abs(y - targetBottom) > 0.5);
-        // Удаляем её из красных (на случай если она уже там)
         beams = beams.filter(y => Math.abs(y - targetBottom) > 0.5);
-        // Добавляем только в красные
         beams.push(targetBottom);
       }
     }
@@ -643,22 +638,17 @@ if (standardMode) {
   const beamsTop = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
   if (beamsTop.length > 0) {
     const lastBeam = beamsTop[beamsTop.length - 1];
-    // Если от последней красной до стены >= 600
     if (yWallBot - lastBeam >= 600) {
-      // Ищем зеленую линию между последней красной и стеной
       const targetTop = tea600Y.find(y => y > lastBeam + 0.5 && y < yWallBot - 0.5);
       if (targetTop !== undefined) {
-        // Удаляем её из зеленых
         tea600Y = tea600Y.filter(y => Math.abs(y - targetTop) > 0.5);
-        // Удаляем её из красных
         beams = beams.filter(y => Math.abs(y - targetTop) > 0.5);
-        // Добавляем только в красные
         beams.push(targetTop);
       }
     }
   }
 
-  // 3. Сортируем оба массива
+  // 3. Сортируем массивы
   beams.sort((a, b) => a - b);
   tea600Y.sort((a, b) => a - b);
 }
