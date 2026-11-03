@@ -652,6 +652,12 @@ if (standardMode) {
   beams.sort((a, b) => a - b);
   tea600Y.sort((a, b) => a - b);
 }
+  
+// ★★★ ЛОГИКА 1200x600: УДАЛЯЕМ 600-е ЛИНИИ ★★★
+if (tile1200Chk.checked) {
+  tea600Y = []; 
+}
+  
 // ★★★ КОНЕЦ ЛОГИКИ ★★★
 
 const xLineMin=vX[0],xLineMax=vX[vX.length-1];
@@ -809,7 +815,12 @@ if(!standardMode && !isFrameRigid){
 }
 
 const nMainPieces = lay.sum3600Length>0 ? Math.ceil(lay.sum3600Length/MAIN_LENGTH) : 0;
-const tilesCount = lay.bcL * lay.bcW;
+let tilesCount;
+if (tile1200Chk.checked) {
+  tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
+} else {
+  tilesCount = lay.bcL * lay.bcW;
+}
 
 const positionsX=[];
 if(L<=2*HANGER_WALL_MAX) positionsX.push(L/2);
@@ -937,13 +948,11 @@ svg+='<rect x="'+ox+'" y="'+oy+'" width="'+drawWidth+'" height="'+drawHeight+'" 
 
 svg+='<g clip-path="url(#ac-room-clip)"><g transform="translate('+roomCx+' '+roomCy+') rotate('+totalRot+') translate('+(-gridCx)+' '+(-gridCy)+')">';
 const gap=(TILE_CELL-TILE_PANEL)/2;
-const stepX = tile1200 ? 1200 : 600;
 for(let k=kMin;k<=kMax;k++) {
   for(let j=jMin;j<=jMax;j++){
     const cx=xS+j*TILE_CELL+gap;
     const cy=yS+k*TILE_CELL+gap;
-    const tileW = tile1200 ? 1190 : 595;
-    svg+='<rect x="'+(cx*s)+'" y="'+(cy*s)+'" width="'+(tileW*s)+'" height="'+(TILE_PANEL*s)+'" fill="#fbfbfb" stroke="#e2e2e2" stroke-width="0.6"/>';
+    svg+='<rect x="'+(cx*s)+'" y="'+(cy*s)+'" width="'+(TILE_PANEL*s)+'" height="'+(TILE_PANEL*s)+'" fill="#fbfbfb" stroke="#e2e2e2" stroke-width="0.6"/>';
   }
 }
 for(const it of items){
