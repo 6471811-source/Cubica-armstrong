@@ -771,136 +771,179 @@ let threeRenderer,threeScene,threeCamera,threeControls;
 let threeRoomGroup,threeGridPivot,threeTilesGroup,threeHangersGroup,threeCeilingMesh;
 let project=[],activeRoomIndex=null,specMode='current';
 
-function calculate(){
-let L_in=parseFloat(lengthInput.value),W_in=parseFloat(widthInput.value);
-if(isNaN(L_in)||isNaN(W_in)||L_in<=0||W_in<=0){
-resultsDiv.innerHTML='<p style="color:#d32f2f">Введите корректные размеры.</p>';
-layout2dDiv.innerHTML='';return;
-}
-if(!roomPolygon && L_in < W_in){const _t=L_in;L_in=W_in;W_in=_t;}
-
-const offX_in=parseFloat(offsetXSlider.value),offY_in=parseFloat(offsetYSlider.value),rotationDeg=parseFloat(rotationSlider.value);
+function buildLayout(L,W,offsetX,offsetY,totalRotDeg,L_in,W_in,phase){
+phase=phase||0;
+const t=totalRotDeg*Math.PI/180,ct=Math.cos(t),st=Math.sin(t);
+const act=Math.abs(ct),ast=Math.abs(st);
+const hx=(L_in/2)*act+(W_in/2)*ast;
+const hy=(L_in/2)*ast+(W_in/2)*act;
+const bcL=Math.ceil(L/TILE_CELL),bcW=Math.ceil(W/TILE_CELL);
+const xS=-(bcL*TILE_CELL-L)/2+offsetX;
+const yS=-(bcW*TILE_CELL-W)/2+offsetY;
+const yWallTop=W/2-hy,yWallBot=W/2+hy;
+const xWallMin=L/2-hx,xWallMax=L/2+hx;
+const jMin=Math.floor((xWallMin-xS)/TILE_CELL)-1;
+const jMax=Math.ceil((xWallMax-xS)/TILE_CELL)+1;
+const kMin=Math.floor((yWallTop-yS)/TILE_CELL)-1;
+const kMax=Math.ceil((yWallBot-yS)/TILE_CELL)+1;
+const vX=[];for(let j=jMin;j<=jMax;j++) vX.push(xS+j*TILE_CELL);
+let beams=[],tea600Y=[];
 const isTile1200 = !!tile1200Chk.checked;
-const isFrameRigid = !!frameRigidChk.checked;
 
-let L=L_in, W=W_in;
-if(roomPolygon){
-  const bb=polyBBox(roomPolygon);
-  L=bb.W; W=bb.H;
-} else if(rotated90){
-  L=W_in; W=L_in;
-}
-const totalRot=rotationDeg+(rotated90?90:0);
-const t=totalRot*Math.PI/180,cosT=Math.cos(t),sinT=Math.sin(t);
-const offsetX=offX_in*cosT+offY_in*sinT;
-const offsetY=-offX_in*sinT+offY_in*cosT;
-
-const layNormal=buildLayout(L,W,offsetX,offsetY,totalRot,L_in,W_in,0);
-let lay=layNormal;
-let ilyutikApplied=false;
-let n3600Normal=layNormal.n3600;
-let n3600Alternative=null;
-
-// Оптимизация (сдвиг несущих) актуальна только если каркас НЕ жесткий
-if(!standardMode && !isFrameRigid){
-  const layFlip=buildLayout(L,W,offsetX,offsetY,totalRot,L_in,W_in,1);
-  n3600Alternative=layFlip.n3600;
-  if(layFlip.n3600<layNormal.n3600){lay=layFlip;ilyutikApplied=true;}
-}
-
-const nMainPieces = lay.sum3600Length>0 ? Math.ceil(lay.sum3600Length/MAIN_LENGTH) : 0;
-const tilesCount = lay.bcL * lay.bcW;
-
-const positionsX=[];
-if(L<=2*HANGER_WALL_MAX) positionsX.push(L/2);
-else{
-positionsX.push(HANGER_WALL_MAX);
-let x=HANGER_WALL_MAX+HANGER_SPACING;
-while(x<=L-HANGER_WALL_MAX){positionsX.push(x);x+=HANGER_SPACING;}
-const lx=L-HANGER_WALL_MAX;
-if(lx-positionsX[positionsX.length-1]>50) positionsX.push(lx);
-}
-const totalHangers=lay.beamsInRoom.length*positionsX.length;
-const areaM2 = roomPolygon ? polyArea(roomPolygon)/1e6 : L_in*W_in/1e6;
-const perimeter = roomPolygon ? polyPerimeter(roomPolygon) : 2*(L_in+W_in);
-const wallAnglePieces=Math.ceil(perimeter/3000);
-const angleFasteners=Math.ceil(perimeter/ANGLE_WALL_SPACING);
-
-// ===== ПОДВЕСЫ И КРЕПЕЖ =====
-const isHangers = !!hangersChk.checked;
-const hangerHeight = parseFloat(hangerHInput.value) || 0;
-
-const tileName = isTile1200 ? '1200х600' : '600х600';
-const specRows=[
-{label:'Площадь',value:areaM2.toFixed(2)+' м²',num:areaM2,kind:'area'},
-{label:`Плита потолочная ${tileName}х12 мм`,value:tilesCount+' шт.',num:tilesCount,kind:'count',unit:'шт.'},
-{label:'Т-профиль 24х33х3600 Премиум белый',value:nMainPieces+' шт.',num:nMainPieces,kind:'count',color:'#d32f2f',unit:'шт.'},
-{label:'Т-профиль 24х26х1200 белый',value:lay.n1200+' шт.',num:lay.n1200,kind:'count',color:'#1976d2',unit:'шт.'},
-];
-
-if (!isTile1200) {
-  specRows.push({label:'Т-профиль 24х20х600 Стандарт белый',value:lay.n600+' шт.',num:lay.n600,kind:'count',color:'#43a047',unit:'шт.'});
-}
-
-specRows.push({label:'Уголок пристеночный 19х19 (3м) белый',value:wallAnglePieces+' шт.',num:wallAnglePieces,kind:'count',unit:'шт.'});
-
-if (isHangers) {
-  if (hangerHeight < 0.50) {
-    specRows.push({label:'Европодвес 500 мм', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-  } else if (hangerHeight < 0.70) {
-    specRows.push({label:'Тяга-крюк 250 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-    specRows.push({label:'Тяга-петля 350 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-  } else if (hangerHeight < 1.00) {
-    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-    specRows.push({label:'Тяга-петля 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-  } else if (hangerHeight < 1.30) {
-    specRows.push({label:'Тяга-крюк 350 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-  } else if (hangerHeight < 1.50) {
-    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-  } else if (hangerHeight < 2.00) {
-    specRows.push({label:'Тяга-крюк 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-    specRows.push({label:'Пружина европодвеса d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-  } else if (hangerHeight < 2.50) {
-    specRows.push({label:'Тяга-крюк 500 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count', unit:'шт.'});
-    specRows.push({label:'Пружина европодвеса d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count', unit:'шт.'});
+for(let k=kMin;k<=kMax;k++){
+  const y=yS+k*TILE_CELL;
+  const m=((k%2)+2)%2;
+  let isBeam;
+  if(frameRigidChk.checked){
+    isBeam = true; // Жесткий каркас: несущие на каждой линии
   } else {
-    specRows.push({label:'Тяга-крюк 1000 мм d 4,0', value:totalHangers+' шт.', num:totalHangers, kind:'count', unit:'шт.'});
-    specRows.push({label:'Тяга-петля 1000 мм d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count', unit:'шт.'});
-    specRows.push({label:'Пружина европодвеса d 4,0', value:(totalHangers*2)+' шт.', num:totalHangers*2, kind:'count', unit:'шт.'});
+    // Если плита 1200х600, то 600-е (нечетные) не нужны, ставим только 1200-е (четные)
+    if(isTile1200) {
+        isBeam = m===1; 
+    } else {
+        isBeam = phase===1 ? m===0 : m===1;
+    }
+  }
+  if(isBeam) beams.push(y); 
+  else if(!isTile1200) tea600Y.push(y);
+}
+
+// ★★★ ЛОГИКА ДЛЯ ТЕХКАРТЫ (С ИГНОРИРОВАНИЕМ ЛИНИЙ У СТЕНЫ) ★★★
+if (standardMode) {
+  let allLines = [...beams, ...tea600Y]
+    .filter(y => y > yWallTop + 1 && y < yWallBot - 1)
+    .sort((a,b)=>a-b);
+  
+  if (allLines.length > 0) {
+    const bottomLine = allLines[0];
+    let isRed = beams.some(b => Math.abs(b - bottomLine) < 0.5);
+    if (!isRed) {
+      tea600Y = tea600Y.filter(y => Math.abs(y - bottomLine) > 0.5);
+      beams.push(bottomLine);
+    }
+    
+    const topLine = allLines[allLines.length - 1];
+    let isRedTop = beams.some(b => Math.abs(b - topLine) < 0.5);
+    if (!isRedTop) {
+      tea600Y = tea600Y.filter(y => Math.abs(y - topLine) > 0.5);
+      beams.push(topLine);
+    }
+  }
+  
+  beams.sort((a, b) => a - b);
+  tea600Y.sort((a, b) => a - b);
+}
+// ★★★ КОНЕЦ ЛОГИКИ ★★★
+
+const xLineMin=vX[0],xLineMax=vX[vX.length-1];
+const beamsIn=beams.filter(y=>y>yWallTop-0.5&&y<yWallBot+0.5);
+const edges=[yWallTop,...beamsIn,yWallBot];
+const bands=[];
+for(let i=0;i<edges.length-1;i++){
+const y0=edges[i],y1=edges[i+1];
+if(y1-y0<=0.5) continue;
+bands.push({y0,y1,isEdge:(i===0)||(i===edges.length-2)});
+}
+const toDisplay=(xw,yw)=>{
+const dxw=xw-L/2,dyw=yw-W/2;
+const u=dxw*ct-dyw*st,v=dxw*st+dyw*ct;
+return [u+L_in/2,v+W_in/2];
+};
+const poly=roomPolygon;
+function onWallByPoints(dx1,dy1,dx2,dy2){
+if(poly) return segOnPolyWall(poly,dx1,dy1,dx2,dy2);
+const onTop=Math.abs(dy1)<WALL_TOL&&Math.abs(dy2)<WALL_TOL;
+const onBot=Math.abs(dy1-W_in)<WALL_TOL&&Math.abs(dy2-W_in)<WALL_TOL;
+const onLeft=Math.abs(dx1)<WALL_TOL&&Math.abs(dx2)<WALL_TOL;
+const onRight=Math.abs(dx1-L_in)<WALL_TOL&&Math.abs(dx2-L_in)<WALL_TOL;
+return onTop||onBot||onLeft||onRight;
+}
+function itemOnWall(it){
+let ex1,ey1,ex2,ey2;
+if(it.ori==='h'){ex1=it.x-it.len/2;ey1=it.y;ex2=it.x+it.len/2;ey2=it.y;}
+else{ex1=it.x;ey1=it.y-it.len/2;ex2=it.x;ey2=it.y+it.len/2;}
+const [dx1,dy1]=toDisplay(ex1,ey1);const [dx2,dy2]=toDisplay(ex2,ey2);
+return onWallByPoints(dx1,dy1,dx2,dy2);
+}
+const items=[];
+for(const yb of beams) items.push({type:3600,x:(xLineMin+xLineMax)/2,y:yb,len:xLineMax-xLineMin,ori:'h'});
+if(!isTile1200){
+  for(const yt of tea600Y){
+    for(let j=0;j<vX.length-1;j++){
+      const len=vX[j+1]-vX[j];if(len<=0.5) continue;
+      items.push({type:600,x:(vX[j]+vX[j+1])/2,y:yt,len,ori:'h'});
+    }
   }
 }
-
-// Анкеры и дюбели есть ВСЕГДА (не зависят от галочки подвесов)
-specRows.push({label:'Анкерный болт с полукольцом М8х40 (100 шт.)',value:totalHangers+' шт.',num:totalHangers,kind:'count',unit:'шт.'});
-specRows.push({label:'Дюбель-гвоздь SM-G 6x40 (3600/200шт.)',value:'≈ '+angleFasteners+' шт.',num:angleFasteners,kind:'approx',unit:'шт.'});
-
-const warnings=[];
-if(lay.n3600<1) warnings.push('⚠ Ни одной несущей — увеличьте ширину помещения или сдвиньте раскладку.');
-if(lay.warnWide) warnings.push('⚠ Полоса у стены > 1200 мм — рекомендуется промежуточная несущая.');
-if(rotationDeg!==0) warnings.push('⚠ При повороте раскладки количество элементов ориентировочное.');
-if(roomPolygon) warnings.push('✏️ Помещение начерчено: '+roomPolygon.length+' сторон. Площадь '+areaM2.toFixed(2)+' м².');
-if(isFrameRigid) warnings.push('🔧 Жесткий каркас: несущие 3600 на каждой линии (без 600-х профилей в пролетах).');
-else if(standardMode) warnings.push('📐 Расчёт по техкарте 132-06 ТК: несущие на нечётных линиях сетки. Направляющих 3600 — '+n3600Normal+' шт.');
-else if(ilyutikApplied) warnings.push('📐 Оптимизация: несущие на чётных линиях сетки. Направляющих 3600 — '+lay.n3600+' шт. (вместо '+n3600Normal+').');
-else warnings.push('📐 Оптимизация: перестановка не даёт выигрыша — обычное положение ('+n3600Normal+' шт.).');
-
-currentLayout={L,W,L_in,W_in,rotationDeg,rotated90,totalRot,lay,positionsX,
-nMainPieces,tilesCount,totalHangers,wallAnglePieces,angleFasteners,perimeter,areaM2,
-specRows,warnings,standardMode,ilyutikApplied,n3600Normal,n3600Alternative,
-tile1200: isTile1200, frameRigid: isFrameRigid,
-polygon:roomPolygon?roomPolygon.map(p=>[p[0],p[1]]):null};
-
-renderSpec();
-drawLayout2D();
-if(threeInitialized) update3D();
+let warnWide=false;
+for(const band of bands){
+const h=band.y1-band.y0,yMid=(band.y0+band.y1)/2;
+let type;
+if(h<=600) type=600; else if(h<=1200) type=1200;
+else{type=1200;if(band.isEdge)warnWide=true;}
+for(const xv of vX) items.push({type,x:xv,y:yMid,len:h,ori:'v'});
+}
+let excludedOnWall=0;
+for(let i=items.length-1;i>=0;i--) if(itemOnWall(items[i])){items.splice(i,1);excludedOnWall++;}
+function rectSegClip(x1,y1,x2,y2){
+let t0=0,t1=1;const dx=x2-x1,dy=y2-y1;
+const p=[-dx,dx,-dy,dy],q=[x1,L_in-x1,y1,W_in-y1];
+for(let i=0;i<4;i++){
+if(Math.abs(p[i])<1e-9){if(q[i]<0)return null;}
+else{const tt=q[i]/p[i];if(p[i]<0)t0=Math.max(t0,tt);else t1=Math.min(t1,tt);}
+}
+if(t0>t1+1e-6) return null;
+return [t0,t1];
+}
+function clipItem(it){
+let ex1,ey1,ex2,ey2;
+if(it.ori==='h'){ex1=it.x-it.len/2;ey1=it.y;ex2=it.x+it.len/2;ey2=it.y;}
+else{ex1=it.x;ey1=it.y-it.len/2;ex2=it.x;ey2=it.y+it.len/2;}
+const [dx1,dy1]=toDisplay(ex1,ey1);const [dx2,dy2]=toDisplay(ex2,ey2);
+if(poly) return clipSegToPoly(poly,dx1,dy1,dx2,dy2);
+const c=rectSegClip(dx1,dy1,dx2,dy2);
+if(!c) return [];
+const x1=dx1+(dx2-dx1)*c[0], y1=dy1+(dy2-dy1)*c[0];
+const x2=dx1+(dx2-dx1)*c[1], y2=dy1+(dy2-dy1)*c[1];
+return [[x1,y1,x2,y2]];
+}
+let n3600=0,n1200=0,n600=0,n600Side=0;
+let sum3600Length=0;
+for(const it of items){
+const segs=clipItem(it);
+if(!segs.length) continue;
+let visLen=0;
+for(const s of segs) visLen+=Math.hypot(s[2]-s[0],s[3]-s[1]);
+if(visLen<MIN_VISIBLE) continue;
+if(it.type===3600){n3600++;sum3600Length+=visLen;}
+else if(it.type===1200) n1200++;
+else{
+n600++;
+if(it.ori==='h'){for(const s of segs){if(Math.min(s[0],s[2])<1||Math.max(s[0],s[2])>L_in-1){n600Side++;break;}}}
+}
+}
+const beamsInRoom=[];
+for(const yb of beams){
+const segs=clipItem({type:3600,x:(xLineMin+xLineMax)/2,y:yb,len:xLineMax-xLineMin,ori:'h'});
+let visLen=0;
+for(const s of segs) visLen+=Math.hypot(s[2]-s[0],s[3]-s[1]);
+if(visLen<MIN_VISIBLE) continue;
+let onWall=false;
+if(poly){
+if(segs.length===1){
+const s=segs[0];
+if(Math.abs(s[2]-s[0])>0.01) onWall=segOnPolyWall(poly,s[0],s[1],s[2],s[3]);
+}
+} else {
+const [dx1,dy1]=toDisplay(xLineMin,yb);
+const [dx2,dy2]=toDisplay(xLineMax,yb);
+onWall=onWallByPoints(dx1,dy1,dx2,dy2);
+}
+if(onWall) continue;
+beamsInRoom.push(yb);
+}
+return {phase,bcL,bcW,xS,yS,jMin,jMax,kMin,kMax,vX,beams,tea600Y,bands,items,
+n3600,n1200,n600,n600Side,beamsInRoom,warnWide,sum3600Length,excludedOnWall,clipItem};
 }
 
 function drawLayout2D(){
@@ -937,15 +980,28 @@ svg+='<rect x="'+ox+'" y="'+oy+'" width="'+drawWidth+'" height="'+drawHeight+'" 
 
 svg+='<g clip-path="url(#ac-room-clip)"><g transform="translate('+roomCx+' '+roomCy+') rotate('+totalRot+') translate('+(-gridCx)+' '+(-gridCy)+')">';
 const gap=(TILE_CELL-TILE_PANEL)/2;
-const stepX = tile1200 ? 1200 : 600;
-for(let k=kMin;k<=kMax;k++) {
-  for(let j=jMin;j<=jMax;j++){
-    const cx=xS+j*TILE_CELL+gap;
-    const cy=yS+k*TILE_CELL+gap;
-    const tileW = tile1200 ? 1190 : 595;
-    svg+='<rect x="'+(cx*s)+'" y="'+(cy*s)+'" width="'+(tileW*s)+'" height="'+(TILE_PANEL*s)+'" fill="#fbfbfb" stroke="#e2e2e2" stroke-width="0.6"/>';
-  }
+
+// ★★★ ИЗМЕНЕНИЕ: Отрисовка плит (1200x600 без полосок) ★★★
+if (tile1200) {
+    for(let k=kMin;k<=kMax;k++) {
+      for(let j=jMin;j<=jMax;j+=2){ // шаг 2 для длинных плит
+        const cx=xS+j*TILE_CELL+gap;
+        const cy=yS+k*TILE_CELL+gap;
+        const tileW = 1190; // ширина длинной плиты
+        svg+='<rect x="'+(cx*s)+'" y="'+(cy*s)+'" width="'+(tileW*s)+'" height="'+(TILE_PANEL*s)+'" fill="#fbfbfb" stroke="#e2e2e2" stroke-width="0.6"/>';
+      }
+    }
+} else {
+    for(let k=kMin;k<=kMax;k++) {
+      for(let j=jMin;j<=jMax;j++){
+        const cx=xS+j*TILE_CELL+gap;
+        const cy=yS+k*TILE_CELL+gap;
+        svg+='<rect x="'+(cx*s)+'" y="'+(cy*s)+'" width="'+(TILE_PANEL*s)+'" height="'+(TILE_PANEL*s)+'" fill="#fbfbfb" stroke="#e2e2e2" stroke-width="0.6"/>';
+      }
+    }
 }
+// ★★★ КОНЕЦ ИЗМЕНЕНИЯ ★★★
+
 for(const it of items){
 let col,sw;
 if(it.type===3600){col='#d32f2f';sw=3.2;}
