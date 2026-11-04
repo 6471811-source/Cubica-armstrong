@@ -653,8 +653,11 @@ if (standardMode) {
   tea600Y.sort((a, b) => a - b);
 }
   
-// ★★★ ЛОГИКА 1200x600: ОСТАВЛЯЕМ 600-е, НО МЕНЯЕМ ТИП НА 1200 ★★★
-// (Ничего не удаляем. При формировании items они получат type: 1200, если галочка нажата.)
+// ★★★ ЛОГИКА 1200x600: УДАЛЯЕМ 600-е ЛИНИИ ★★★
+if (tile1200Chk.checked) {
+  tea600Y = []; 
+}
+  
 // ★★★ КОНЕЦ ЛОГИКИ ★★★
 
 const xLineMin=vX[0],xLineMax=vX[vX.length-1];
@@ -689,11 +692,12 @@ return onWallByPoints(dx1,dy1,dx2,dy2);
 }
 const items=[];
 for(const yb of beams) items.push({type:3600,x:(xLineMin+xLineMax)/2,y:yb,len:xLineMax-xLineMin,ori:'h'});
-for(const yt of tea600Y){
-  for(let j=0;j<vX.length-1;j++){
-    const len=vX[j+1]-vX[j];if(len<=0.5) continue;
-    // Если 1200x600, то 600-е превращаются в 1200-е (синие)
-    items.push({type: tile1200Chk.checked ? 1200 : 600, x:(vX[j]+vX[j+1])/2, y:yt, len, ori:'h'});
+if(!tile1200Chk.checked){
+  for(const yt of tea600Y){
+    for(let j=0;j<vX.length-1;j++){
+      const len=vX[j+1]-vX[j];if(len<=0.5) continue;
+      items.push({type:600,x:(vX[j]+vX[j+1])/2,y:yt,len,ori:'h'});
+    }
   }
 }
 let warnWide=false;
@@ -842,7 +846,7 @@ const specRows=[
 {label:'Площадь',value:areaM2.toFixed(2)+' м²',num:areaM2,kind:'area'},
 {label:`Плита потолочная ${tileName}х12 мм`,value:tilesCount+' шт.',num:tilesCount,kind:'count',unit:'шт.'},
 {label:'Т-профиль 24х33х3600 Премиум белый',value:nMainPieces+' шт.',num:nMainPieces,kind:'count',color:'#d32f2f',unit:'шт.'},
-{label:'Т-профиль 24х26х1200 белый',value:(lay.n1200 + (tile1200Chk.checked ? lay.n600 : 0))+' шт.',num:(lay.n1200 + (tile1200Chk.checked ? lay.n600 : 0)),kind:'count',color:'#1976d2',unit:'шт.'},
+{label:'Т-профиль 24х26х1200 белый',value:lay.n1200+' шт.',num:lay.n1200,kind:'count',color:'#1976d2',unit:'шт.'},
 ];
 
 if (!isTile1200) {
