@@ -842,9 +842,7 @@ const specRows=[
 {label:'Площадь',value:areaM2.toFixed(2)+' м²',num:areaM2,kind:'area'},
 {label:`Плита потолочная ${tileName}х12 мм`,value:tilesCount+' шт.',num:tilesCount,kind:'count',unit:'шт.'},
 {label:'Т-профиль 24х33х3600 Премиум белый',value:nMainPieces+' шт.',num:nMainPieces,kind:'count',color:'#d32f2f',unit:'шт.'},
-if (!isTile1200) {
-  specRows.push({label:'Т-профиль 24х20х600 Стандарт белый',value:lay.n600+' шт.',num:lay.n600,kind:'count',color:'#43a047',unit:'шт.'});
-}
+{label:'Т-профиль 24х26х1200 белый',value:(lay.n1200 + (tile1200Chk.checked ? lay.n600 : 0))+' шт.',num:(lay.n1200 + (tile1200Chk.checked ? lay.n600 : 0)),kind:'count',color:'#1976d2',unit:'шт.'},
 ];
 
 if (!isTile1200) {
