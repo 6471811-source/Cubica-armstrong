@@ -653,39 +653,12 @@ if (standardMode) {
   tea600Y.sort((a, b) => a - b);
 }
   
-// ★★★ ЛОГИКА 1200x600: УДАЛЯЕМ 600-е И СТАВИМ 1200-е У СТЕН ★★★
+// ★★★ ЛОГИКА 1200x600: УДАЛЯЕМ 600-е ЛИНИИ ★★★
 if (tile1200Chk.checked) {
-  tea600Y = []; // Убираем все зеленые (600) линии
-
-  // Теперь проверяем, есть ли у стен пролеты, которые раньше закрывались 600-ми.
-  // Если от стены до первой красной линии больше 1200, значит, туда нужно поставить синюю (1200).
-  // (Потому что мы не можем оставить пустоту, а зеленых больше нет).
-  
-  // Снизу
-  const beamsBottom = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
-  if (beamsBottom.length > 0) {
-    const firstBeam = beamsBottom[0];
-    if (firstBeam - yWallTop > 100) { 
-      // Если есть зазор до первой красной, ставим туда синюю линию (1200)
-      // (Она встанет между стеной и первой красной)
-      beams.push(yWallTop + (firstBeam - yWallTop)/2); 
-    }
-  }
-
-  // Сверху
-  const beamsTop = beams.filter(y => y > yWallTop - 0.5 && y < yWallBot + 0.5);
-  if (beamsTop.length > 0) {
-    const lastBeam = beamsTop[beamsTop.length - 1];
-    if (yWallBot - lastBeam > 100) {
-       // То же самое сверху
-       beams.push(yWallBot - (yWallBot - lastBeam)/2);
-    }
-  }
-  
-  beams.sort((a, b) => a - b);
+  tea600Y = []; 
 }
-// ★★★ КОНЕЦ ЛОГИКИ ★★★
   
+// ★★★ КОНЕЦ ЛОГИКИ ★★★
 
 const xLineMin=vX[0],xLineMax=vX[vX.length-1];
 const beamsIn=beams.filter(y=>y>yWallTop-0.5&&y<yWallBot+0.5);
@@ -873,7 +846,7 @@ const specRows=[
 {label:'Площадь',value:areaM2.toFixed(2)+' м²',num:areaM2,kind:'area'},
 {label:`Плита потолочная ${tileName}х12 мм`,value:tilesCount+' шт.',num:tilesCount,kind:'count',unit:'шт.'},
 {label:'Т-профиль 24х33х3600 Премиум белый',value:nMainPieces+' шт.',num:nMainPieces,kind:'count',color:'#d32f2f',unit:'шт.'},
-{label:'Т-профиль 24х26х1200 белый',value:(lay.n1200 + (tile1200Chk.checked ? 2 : 0))+' шт.',num:(lay.n1200 + (tile1200Chk.checked ? 2 : 0)),kind:'count',color:'#1976d2',unit:'шт.'},
+{label:'Т-профиль 24х26х1200 белый',value:lay.n1200+' шт.',num:lay.n1200,kind:'count',color:'#1976d2',unit:'шт.'},
 ];
 
 if (!isTile1200) {
@@ -979,8 +952,7 @@ for(let k=kMin;k<=kMax;k++) {
   for(let j=jMin;j<=jMax;j++){
     const cx=xS+j*TILE_CELL+gap;
     const cy=yS+k*TILE_CELL+gap;
-    const tileW = tile1200 ? 1190 : 595; // Ширина плиты
-    svg+='<rect x="'+(cx*s)+'" y="'+(cy*s)+'" width="'+(tileW*s)+'" height="'+(TILE_PANEL*s)+'" fill="#fbfbfb" stroke="#e2e2e2" stroke-width="0.6"/>';
+    svg+='<rect x="'+(cx*s)+'" y="'+(cy*s)+'" width="'+(TILE_PANEL*s)+'" height="'+(TILE_PANEL*s)+'" fill="#fbfbfb" stroke="#e2e2e2" stroke-width="0.6"/>';
   }
 }
 for(const it of items){
