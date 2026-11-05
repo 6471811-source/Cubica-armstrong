@@ -606,15 +606,33 @@ const kMin=Math.floor((yWallTop-yS)/TILE_CELL)-1;
 const kMax=Math.ceil((yWallBot-yS)/TILE_CELL)+1;
 const vX=[];for(let j=jMin;j<=jMax;j++) vX.push(xS+j*TILE_CELL);
 let beams=[],tea600Y=[];
+const isTile1200 = !!tile1200Chk.checked;
+const isRigid = !!frameRigidChk.checked;
+
 for(let k=kMin;k<=kMax;k++){
   const y=yS+k*TILE_CELL;
   const m=((k%2)+2)%2;
   let isBeam;
-  if(frameRigidChk.checked){
-    isBeam = true; // Жесткий каркас: несущие на каждой линии
+  
+  if(isTile1200){
+    if(isRigid){
+      // Жесткий каркас + 1200x600: несущие каждые 600 мм (на каждой линии)
+      isBeam = true;
+    } else {
+      // Обычный каркас + 1200x600: несущие каждые 1200 мм (строго через одну линию)
+      // Игнорируем phase (оптимизацию), чтобы шаг был всегда 1200
+      isBeam = (m === 0); 
+    }
   } else {
-    isBeam = phase===1 ? m===0 : m===1;
+    if(isRigid){
+      // Жесткий каркас без 1200x600: несущие на каждой линии
+      isBeam = true;
+    } else {
+      // Обычный каркас без 1200x600: шаг 1200 с оптимизацией (phase)
+      isBeam = phase===1 ? m===0 : m===1;
+    }
   }
+  
   if(isBeam) beams.push(y); else tea600Y.push(y);
 }
 
@@ -813,25 +831,34 @@ let ilyutikApplied=false;
 let n3600Normal=layNormal.n3600;
 let n3600Alternative=null;
 
-// Оптимизация (сдвиг несущих) актуальна только если каркас НЕ жесткий
-if(!standardMode && !isFrameRigid){
+// Оптимизация (сдвиг несущих) актуальна только если каркас НЕ жесткий И плита НЕ 1200x600
+if(!standardMode && !isFrameRigid && !isTile1200){
   const layFlip=buildLayout(L,W,offsetX,offsetY,totalRot,L_in,W_in,1);
   n3600Alternative=layFlip.n3600;
   if(layFlip.n3600<layNormal.n3600){lay=layFlip;ilyutikApplied=true;}
 }
-
+  
 const nMainPieces = lay.sum3600Length>0 ? Math.ceil(lay.sum3600Length/MAIN_LENGTH) : 0;
 let tilesCount;
 if (tile1200Chk.checked) {
-  // Если сетка повернута на 90 или 270 градусов, склейка плит идет по другой оси (по Y)
   const isVerticalGrid = (totalRot % 180 !== 0);
   
-  if (isVerticalGrid) {
-    // При повороте длинная сторона плиты смотрит вдоль Y
-    tilesCount = lay.bcL * Math.ceil(lay.bcW / 2);
+  if (frameRigidChk.checked) {
+    // Жесткий каркас: шаг несущих 600 мм. 
+    // Плита 1200x600 ложится ВДОЛЬ несущих.
+    if (isVerticalGrid) {
+       tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
+    } else {
+       tilesCount = Math.ceil(lay.bcW / 2) * lay.bcL;
+    }
   } else {
-    // Обычное положение: длинная сторона вдоль X
-    tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
+    // Обычный каркас: шаг 1200 мм. 
+    // Плита 1200x600 ложится ПОПЕРЕК несущих.
+    if (isVerticalGrid) {
+       tilesCount = lay.bcL * Math.ceil(lay.bcW / 2);
+    } else {
+       tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
+    }
   }
 } else {
   // Для 600х600 всегда просто перемножаем
@@ -914,7 +941,13 @@ if(lay.n3600<1) warnings.push('⚠ Ни одной несущей — увели
 if(lay.warnWide) warnings.push('⚠ Полоса у стены > 1200 мм — рекомендуется промежуточная несущая.');
 if(rotationDeg!==0) warnings.push('⚠ При повороте раскладки количество элементов ориентировочное.');
 if(roomPolygon) warnings.push('✏️ Помещение начерчено: '+roomPolygon.length+' сторон. Площадь '+areaM2.toFixed(2)+' м².');
-if(isFrameRigid) warnings.push('🔧 Жесткий каркас: несущие 3600 на каждой линии (без 600-х профилей в пролетах).');
+if(isFrameRigid && isTile1200) {
+  warnings.push('🔧 Жесткий каркас + 1200×600: шаг несущих 600 мм, плита 1200×600 ложится вдоль 3600.');
+} else if(isFrameRigid) {
+  warnings.push('🔧 Жесткий каркас: несущие 3600 на каждой линии (без 600-х профилей в пролетах).');
+} else if(isTile1200) {
+  warnings.push('📐 Плита 1200×600: шаг несущих 3600 строго 1200 мм (оптимизация отключена).');
+}
 else if(standardMode) warnings.push('📐 Расчёт по техкарте 132-06 ТК: несущие на нечётных линиях сетки. Направляющих 3600 — '+n3600Normal+' шт.');
 else if(ilyutikApplied) warnings.push('📐 Оптимизация: несущие на чётных линиях сетки. Направляющих 3600 — '+lay.n3600+' шт. (вместо '+n3600Normal+').');
 else warnings.push('📐 Оптимизация: перестановка не даёт выигрыша — обычное положение ('+n3600Normal+' шт.).');
