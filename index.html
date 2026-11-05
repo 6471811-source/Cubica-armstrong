@@ -704,8 +704,14 @@ let warnWide=false;
 for(const band of bands){
 const h=band.y1-band.y0,yMid=(band.y0+band.y1)/2;
 let type;
-if(h<=600) type=600; else if(h<=1200) type=1200;
-else{type=1200;if(band.isEdge)warnWide=true;}
+if(tile1200Chk.checked){
+  // При плите 1200x600 ВСЕ вертикальные профили — 1200 (подрезаются у стены)
+  type=1200;
+  if(h>1200 && band.isEdge) warnWide=true;
+} else {
+  if(h<=600) type=600; else if(h<=1200) type=1200;
+  else{type=1200;if(band.isEdge)warnWide=true;}
+}
 for(const xv of vX) items.push({type,x:xv,y:yMid,len:h,ori:'v'});
 }
 let excludedOnWall=0;
