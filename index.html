@@ -823,8 +823,18 @@ if(!standardMode && !isFrameRigid){
 const nMainPieces = lay.sum3600Length>0 ? Math.ceil(lay.sum3600Length/MAIN_LENGTH) : 0;
 let tilesCount;
 if (tile1200Chk.checked) {
-  tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
+  // Если сетка повернута на 90 или 270 градусов, склейка плит идет по другой оси (по Y)
+  const isVerticalGrid = (totalRot % 180 !== 0);
+  
+  if (isVerticalGrid) {
+    // При повороте длинная сторона плиты смотрит вдоль Y
+    tilesCount = lay.bcL * Math.ceil(lay.bcW / 2);
+  } else {
+    // Обычное положение: длинная сторона вдоль X
+    tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
+  }
 } else {
+  // Для 600х600 всегда просто перемножаем
   tilesCount = lay.bcL * lay.bcW;
 }
 
