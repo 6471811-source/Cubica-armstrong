@@ -595,9 +595,17 @@ const t=totalRotDeg*Math.PI/180,ct=Math.cos(t),st=Math.sin(t);
 const act=Math.abs(ct),ast=Math.abs(st);
 const hx=(L_in/2)*act+(W_in/2)*ast;
 const hy=(L_in/2)*ast+(W_in/2)*act;
-const bcL=Math.ceil(L/TILE_CELL),bcW=Math.ceil(W/TILE_CELL);
+// Вычисляем фактический шаг по Y в зависимости от галочек
+let stepY = TILE_CELL; // по умолчанию 600
+if (tile1200Chk.checked && !frameRigidChk.checked) {
+  stepY = 1200; // Плита 1200х600 без жесткого каркаса: шаг 1200
+}
+
+const bcL=Math.ceil(L/TILE_CELL);
+const bcW=Math.ceil(W/stepY); // Считаем количество рядов по Y с учетом шага
+
 const xS=-(bcL*TILE_CELL-L)/2+offsetX;
-const yS=-(bcW*TILE_CELL-W)/2+offsetY;
+const yS=-(bcW*stepY-W)/2+offsetY;
 const yWallTop=W/2-hy,yWallBot=W/2+hy;
 const xWallMin=L/2-hx,xWallMax=L/2+hx;
 const jMin=Math.floor((xWallMin-xS)/TILE_CELL)-1;
@@ -610,34 +618,37 @@ const isTile1200 = !!tile1200Chk.checked;
 const isRigid = !!frameRigidChk.checked;
 
 for(let k=kMin;k<=kMax;k++){
-  const y=yS+k*TILE_CELL;
-  const m=((k%2)+2)%2;
-  let isBeam;
-  
-  if(isTile1200){
-    if(isRigid){
-      // Жесткий каркас + 1200x600: несущие каждые 600 мм (на каждой линии)
-      isBeam = true;
+  const y = yS + k * stepY; // <--- ВАЖНО: используем stepY вместо TILE_CELL
+
+  if (isTile1200) {
+    if (isRigid) {
+      // Жесткий каркас + 1200х600: несущие каждые 600 мм (каждая линия)
+      beams.push(y);
     } else {
-      // Обычный каркас + 1200x600: несущие каждые 1200 мм (строго через одну линию)
-      // Игнорируем phase (оптимизацию), чтобы шаг был всегда 1200
-      isBeam = (m === 0); 
+      // Обычный + 1200х600: несущие каждые 1200 мм (каждая линия сетки, т.к. шаг уже 1200)
+      beams.push(y);
     }
   } else {
+    // Без 1200х600: логика как была (600х600)
+    const m=((k%2)+2)%2;
+    let isBeam;
     if(isRigid){
-      // Жесткий каркас без 1200x600: несущие на каждой линии
-      isBeam = true;
+      isBeam = true; 
     } else {
-      // Обычный каркас без 1200x600: шаг 1200 с оптимизацией (phase)
       isBeam = phase===1 ? m===0 : m===1;
     }
+    if(isBeam) beams.push(y); else tea600Y.push(y);
   }
-  
-  if(isBeam) beams.push(y); else tea600Y.push(y);
+}
+
+// Удаляем 600-е поперечины, если выбрана плита 1200х600
+if (isTile1200) {
+  tea600Y = []; 
 }
 
 // ★★★ ЛОГИКА ДЛЯ ТЕХКАРТЫ (С ИГНОРИРОВАНИЕМ ЛИНИЙ У СТЕНЫ) ★★★
-if (standardMode) {
+// Отключаем техкарту для 1200x600, чтобы она не ломала шаг 1200 и не рисовала 3600 через 600 мм
+if (standardMode && !tile1200Chk.checked) {
   // 1. Собираем все линии, кроме тех, что лежат прямо на стене (их всё равно удалят)
   let allLines = [...beams, ...tea600Y]
     .filter(y => y > yWallTop + 1 && y < yWallBot - 1)
