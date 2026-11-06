@@ -847,14 +847,14 @@ if(!standardMode && !isFrameRigid){
 const nMainPieces = lay.sum3600Length>0 ? Math.ceil(lay.sum3600Length/MAIN_LENGTH) : 0;
 let tilesCount;
 if (tile1200Chk.checked) {
-  // Если сетка повернута на 90 или 270 градусов, склейка плит идет по другой оси (по Y)
+  // Так как мы уже сжали сетку (stepY = 1200 при обычном каркасе), 
+  // плита 1200х600 занимает 2 ячейки по X и 1 по Y.
+  // При повороте сетки на 90 градусов оси меняются местами.
   const isVerticalGrid = (totalRot % 180 !== 0);
   
   if (isVerticalGrid) {
-    // При повороте длинная сторона плиты смотрит вдоль Y
     tilesCount = lay.bcL * Math.ceil(lay.bcW / 2);
   } else {
-    // Обычное положение: длинная сторона вдоль X
     tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
   }
 } else {
