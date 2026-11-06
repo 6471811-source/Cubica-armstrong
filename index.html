@@ -847,15 +847,16 @@ if(!standardMode && !isFrameRigid){
 const nMainPieces = lay.sum3600Length>0 ? Math.ceil(lay.sum3600Length/MAIN_LENGTH) : 0;
 let tilesCount;
 if (tile1200Chk.checked) {
-  // Поскольку сетка уже сжата (шаг 1200), по оси Y каждая ячейка - это плита.
-  // По оси X плита 1200 занимает 2 ячейки. Делим на 2 без округления вверх, 
-  // так как подрезка (крайние ячейки) уже учтена в lay.bcL.
+  // Так как мы уже физически сжали сетку (шаг 1200 при обычном каркасе),
+  // плита 1200х600 занимает 2 ячейки по X и 1 по Y.
+  // Нам нужно просто разделить количество ячеек по длине на 2.
+  // Округление вверх (Math.ceil) здесь идеально учитывает подрезку у стен.
   const isVerticalGrid = (totalRot % 180 !== 0);
   
   if (isVerticalGrid) {
     tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
   } else {
-    tilesCount = Math.ceil(lay.bcW / 2) * lay.bcL;
+    tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
   }
 } else {
   tilesCount = lay.bcL * lay.bcW;
