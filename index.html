@@ -849,26 +849,8 @@ let tilesCount;
 if (tile1200Chk.checked) {
   // Так как мы уже физически сжали сетку (шаг 1200 при обычном каркасе),
   // плита 1200х600 занимает 2 ячейки по X и 1 по Y.
-  // Нам нужно просто разделить количество ячеек по длине на 2.
-  // Округление вверх (Math.ceil) здесь идеально учитывает подрезку у стен.
-  const isVerticalGrid = (totalRot % 180 !== 0);
-  
-  if (isVerticalGrid) {
-    tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
-  } else {
-    tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
-  }
-} else {
-  tilesCount = lay.bcL * lay.bcW;
-}
-  } else {
-    // Обычный каркас: шаг 1200 (мы уже сжали сетку). Плита 1200x600 ложится поперек.
-    if (isVerticalGrid) {
-       tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
-    } else {
-       tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW; 
-    }
-  }
+  // Просто делим длину на 2, чтобы получить количество плит.
+  tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
 } else {
   tilesCount = lay.bcL * lay.bcW;
 }
