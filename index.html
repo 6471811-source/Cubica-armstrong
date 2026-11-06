@@ -596,16 +596,12 @@ const act=Math.abs(ct),ast=Math.abs(st);
 const hx=(L_in/2)*act+(W_in/2)*ast;
 const hy=(L_in/2)*ast+(W_in/2)*act;
 // Определяем шаг по оси Y (поперек помещения)
-let stepY = TILE_CELL; // по умолчанию 600
-if (tile1200Chk.checked && !frameRigidChk.checked) {
-  stepY = 1200; // Если 1200х600 и НЕ жесткий каркас, шаг 1200
-}
-
+let stepY = TILE_CELL; // всегда 600
 const bcL=Math.ceil(L/TILE_CELL);
-const bcW=Math.ceil(W/stepY); // Считаем количество рядов по Y с новым шагом
+const bcW=Math.ceil(W/stepY); // = Math.ceil(W/TILE_CELL)
 
 const xS=-(bcL*TILE_CELL-L)/2+offsetX;
-const yS=-(bcW*stepY-W)/2+offsetY; // Центрируем сетку с новым шагом
+const yS=-(bcW*stepY-W)/2+offsetY;
 const yWallTop=W/2-hy,yWallBot=W/2+hy;
 const xWallMin=L/2-hx,xWallMax=L/2+hx;
 const jMin=Math.floor((xWallMin-xS)/TILE_CELL)-1;
@@ -847,37 +843,20 @@ if(!standardMode && !isFrameRigid){
 const nMainPieces = lay.sum3600Length>0 ? Math.ceil(lay.sum3600Length/MAIN_LENGTH) : 0;
 let tilesCount;
 if (tile1200Chk.checked) {
-  // 1. Считаем количество полных плит 1200х600, которые лягут целиком.
-  // По длине (X) плита 1200 занимает 2 ячейки по 600.
-  // По ширине (Y) плита 600 занимает 1 ячейку (так как шаг сетки 1200).
-  const fullL = Math.floor(lay.bcL / 2); // Целых плит по длине
-  const fullW = Math.floor(lay.bcW);      // Целых рядов по ширине
+  // Сетка у нас 600х600. Плита 1200х600 занимает 2 ячейки по X и 1 по Y.
+  // Поэтому делим количество колонок (bcL) на 2 и умножаем на количество рядов (bcW).
+  // При повороте на 90 градусов оси X и Y меняются местами.
+  const isVerticalGrid = (totalRot % 180 !== 0);
   
-  let base = fullL * fullW;
-  
-  // 2. Считаем, сколько нужно плит на подрезку.
-  // Если bcL нечетное (есть остаток 600 мм по длине),
-  // то из одной плиты 1200 можно вырезать два куска по 600 мм.
-  // Значит, на все ряды подрезки (их bcW) нужно ceil(bcW / 2) плит.
-  const hasRemL = (lay.bcL % 2 !== 0);
-  if (hasRemL) {
-    base += Math.ceil(lay.bcW / 2);
+  if (isVerticalGrid) {
+    // Плита повернута (занимает 1 ячейку по X и 2 по Y)
+    tilesCount = lay.bcL * Math.ceil(lay.bcW / 2);
+  } else {
+    // Обычное положение (занимает 2 ячейки по X и 1 по Y)
+    tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
   }
-  
-  // При повороте на 90 градусов оси меняются местами.
-  if (totalRot % 180 !== 0) {
-    const fullLV = Math.floor(lay.bcL);
-    const fullWV = Math.floor(lay.bcW / 2);
-    base = fullLV * fullWV;
-    
-    const hasRemW = (lay.bcW % 2 !== 0);
-    if (hasRemW) {
-      base += Math.ceil(lay.bcL / 2);
-    }
-  }
-  
-  tilesCount = Math.max(base, 1); // Минимум 1 плита
 } else {
+  // Для 600х600 просто перемножаем
   tilesCount = lay.bcL * lay.bcW;
 }
 
@@ -1011,7 +990,20 @@ for(let k=kMin;k<=kMax;k++) {
   for(let j=jMin;j<=jMax;j++){
     const cx=xS+j*TILE_CELL+gap;
     const cy=yS+k*TILE_CELL+gap;
-    svg+='<rect x="'+(cx*s)+'" y="'+(cy*s)+'" width="'+(TILE_PANEL*s)+'" height="'+(TILE_PANEL*s)+'" fill="#fbfbfb" stroke="#e2e2e2" stroke-width="0.6"/>';
+    
+    let pW = TILE_PANEL;
+    let pH = TILE_PANEL;
+    let skip = false;
+    
+    if (tile1200) {
+      // Для плиты 1200х600 склеиваем две ячейки по X
+      pW = TILE_PANEL * 2;
+      if (j % 2 !== 0) skip = true; 
+    }
+    
+    if (skip) continue;
+    
+    svg+='<rect x="'+(cx*s)+'" y="'+(cy*s)+'" width="'+(pW*s)+'" height="'+(pH*s)+'" fill="#fbfbfb" stroke="#e2e2e2" stroke-width="0.6"/>';
   }
 }
 for(const it of items){
@@ -1174,11 +1166,13 @@ for(let k=kMin;k<=kMax;k++) {
     } else {
       const p=toLoc(xg,zg); lx=p[0]; lz=p[1];
     }
-    // Если плита 1200х600, пропускаем каждую вторую плиту (склеиваем)
+    // Склеиваем только по X (две ячейки по 600 = 1200)
     if (tile1200 && (j % 2 !== 0)) continue; 
     
     const plateW = tile1200 ? (panelM * 2) : panelM;
-    const pGeo = boxGeo(plateW, PLATE_T, panelM);
+    const plateH = panelM; // Высота всегда 600 (одна ячейка)
+    
+    const pGeo = boxGeo(plateW, PLATE_T, plateH);
     pGeo.__cached = true;
     const mesh=new THREE.Mesh(pGeo,mPlate);
     mesh.position.set(lx,plateY,lz);
