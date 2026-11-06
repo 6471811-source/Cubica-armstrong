@@ -595,10 +595,11 @@ const t=totalRotDeg*Math.PI/180,ct=Math.cos(t),st=Math.sin(t);
 const act=Math.abs(ct),ast=Math.abs(st);
 const hx=(L_in/2)*act+(W_in/2)*ast;
 const hy=(L_in/2)*ast+(W_in/2)*act;
-// Определяем шаг по оси Y (поперек помещения)
-let stepY = TILE_CELL; // всегда 600
-const bcL=Math.ceil(L/TILE_CELL);
-const bcW=Math.ceil(W/stepY); // = Math.ceil(W/TILE_CELL)
+
+// Возвращаем фиксированный шаг 600
+const stepY = TILE_CELL; 
+const bcL = Math.ceil(L / TILE_CELL);
+const bcW = Math.ceil(W / stepY);
 
 const xS=-(bcL*TILE_CELL-L)/2+offsetX;
 const yS=-(bcW*stepY-W)/2+offsetY;
@@ -614,18 +615,16 @@ const isTile1200 = !!tile1200Chk.checked;
 const isRigid = !!frameRigidChk.checked;
 
 for(let k=kMin;k<=kMax;k++){
-  const y = yS + k * stepY; // <--- ВАЖНО: используем stepY вместо TILE_CELL
-
+  const y = yS + k * stepY;
   if (isTile1200) {
+    // Для 1200х600 3600-е всегда идут с шагом 1200 (или 600 при жестком)
     if (isRigid) {
-      // Жесткий каркас + 1200х600: несущие каждые 600 мм (каждая линия)
       beams.push(y);
     } else {
-      // Обычный + 1200х600: несущие каждые 1200 мм (каждая линия сетки, т.к. шаг уже 1200)
-      beams.push(y);
+      const m=((k%2)+2)%2;
+      if (m === 0) beams.push(y); // несущие через одну линию
     }
   } else {
-    // Без 1200х600: логика как была (600х600)
     const m=((k%2)+2)%2;
     let isBeam;
     if(isRigid){
@@ -637,48 +636,33 @@ for(let k=kMin;k<=kMax;k++){
   }
 }
 
-// ★★★ ЛОГИКА ДЛЯ ТЕХКАРТЫ (С ИГНОРИРОВАНИЕМ ЛИНИЙ У СТЕНЫ) ★★★
-// Отключаем техкарту для 1200x600, чтобы она не ломала шаг 1200 и не рисовала 3600 через 600 мм
+// Техкарта отключена для 1200х600
 if (standardMode && !isTile1200) {
-  // 1. Собираем все линии, кроме тех, что лежат прямо на стене (их всё равно удалят)
   let allLines = [...beams, ...tea600Y]
     .filter(y => y > yWallTop + 1 && y < yWallBot - 1)
     .sort((a,b)=>a-b);
   
   if (allLines.length > 0) {
-    // --- СНИЗУ ---
-    // Берем первую линию, которая реально видна в помещении
     const bottomLine = allLines[0];
-    
-    // Проверяем, красная ли она
     let isRed = beams.some(b => Math.abs(b - bottomLine) < 0.5);
     if (!isRed) {
-      // Если зеленая/синяя — делаем красной
       tea600Y = tea600Y.filter(y => Math.abs(y - bottomLine) > 0.5);
       beams.push(bottomLine);
     }
-    
-    // --- СВЕРХУ ---
-    // Берем последнюю линию, которая реально видна
     const topLine = allLines[allLines.length - 1];
-    
     let isRedTop = beams.some(b => Math.abs(b - topLine) < 0.5);
     if (!isRedTop) {
       tea600Y = tea600Y.filter(y => Math.abs(y - topLine) > 0.5);
       beams.push(topLine);
     }
   }
-  
   beams.sort((a, b) => a - b);
   tea600Y.sort((a, b) => a - b);
 }
-  
-// ★★★ ЛОГИКА 1200x600: УДАЛЯЕМ 600-е ЛИНИИ ★★★
+
 if (tile1200Chk.checked) {
   tea600Y = []; 
 }
-  
-// ★★★ КОНЕЦ ЛОГИКИ ★★★
 
 const xLineMin=vX[0],xLineMax=vX[vX.length-1];
 const beamsIn=beams.filter(y=>y>yWallTop-0.5&&y<yWallBot+0.5);
@@ -725,7 +709,6 @@ for(const band of bands){
 const h=band.y1-band.y0,yMid=(band.y0+band.y1)/2;
 let type;
 if(tile1200Chk.checked){
-  // При плите 1200x600 ВСЕ вертикальные профили — 1200 (подрезаются у стены)
   type=1200;
   if(h>1200 && band.isEdge) warnWide=true;
 } else {
@@ -833,7 +816,6 @@ let ilyutikApplied=false;
 let n3600Normal=layNormal.n3600;
 let n3600Alternative=null;
 
-// Оптимизация (сдвиг несущих) актуальна только если каркас НЕ жесткий
 if(!standardMode && !isFrameRigid){
   const layFlip=buildLayout(L,W,offsetX,offsetY,totalRot,L_in,W_in,1);
   n3600Alternative=layFlip.n3600;
@@ -843,20 +825,14 @@ if(!standardMode && !isFrameRigid){
 const nMainPieces = lay.sum3600Length>0 ? Math.ceil(lay.sum3600Length/MAIN_LENGTH) : 0;
 let tilesCount;
 if (tile1200Chk.checked) {
-  // Сетка у нас 600х600. Плита 1200х600 занимает 2 ячейки по X и 1 по Y.
-  // Поэтому делим количество колонок (bcL) на 2 и умножаем на количество рядов (bcW).
-  // При повороте на 90 градусов оси X и Y меняются местами.
+  // По длине (X) плита занимает 2 ячейки по 600. По ширине (Y) 1 ячейку.
   const isVerticalGrid = (totalRot % 180 !== 0);
-  
   if (isVerticalGrid) {
-    // Плита повернута (занимает 1 ячейку по X и 2 по Y)
     tilesCount = lay.bcL * Math.ceil(lay.bcW / 2);
   } else {
-    // Обычное положение (занимает 2 ячейки по X и 1 по Y)
     tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
   }
 } else {
-  // Для 600х600 просто перемножаем
   tilesCount = lay.bcL * lay.bcW;
 }
 
@@ -996,7 +972,8 @@ for(let k=kMin;k<=kMax;k++) {
     let skip = false;
     
     if (tile1200) {
-      // Для плиты 1200х600 склеиваем две ячейки по X
+      // Плита 1200х600 ложится длинной стороной 1200 поперек 3600.
+      // Значит, склеиваем 2 ячейки по X.
       pW = TILE_PANEL * 2;
       if (j % 2 !== 0) skip = true; 
     }
@@ -1166,13 +1143,17 @@ for(let k=kMin;k<=kMax;k++) {
     } else {
       const p=toLoc(xg,zg); lx=p[0]; lz=p[1];
     }
-    // Склеиваем только по X (две ячейки по 600 = 1200)
-    if (tile1200 && (j % 2 !== 0)) continue; 
+    
+    // Логика склейки плит 1200х600
+    if (tile1200) {
+      // Склеиваем 2 ячейки по X, пропускаем нечетные
+      if (j % 2 !== 0) continue; 
+    }
     
     const plateW = tile1200 ? (panelM * 2) : panelM;
-    const plateH = panelM; // Высота всегда 600 (одна ячейка)
+    const plateD = panelM; // По глубине всегда 600
     
-    const pGeo = boxGeo(plateW, PLATE_T, plateH);
+    const pGeo = boxGeo(plateW, PLATE_T, plateD);
     pGeo.__cached = true;
     const mesh=new THREE.Mesh(pGeo,mPlate);
     mesh.position.set(lx,plateY,lz);
