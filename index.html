@@ -847,15 +847,13 @@ if(!standardMode && !isFrameRigid){
 const nMainPieces = lay.sum3600Length>0 ? Math.ceil(lay.sum3600Length/MAIN_LENGTH) : 0;
 let tilesCount;
 if (tile1200Chk.checked) {
-  const isVerticalGrid = (totalRot % 180 !== 0);
-  
-  if (frameRigidChk.checked) {
-    // Жесткий каркас: шаг 600. Плита 1200x600 ложится вдоль несущих.
-    if (isVerticalGrid) {
-       tilesCount = lay.bcL * Math.ceil(lay.bcW / 2);
-    } else {
-       tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
-    }
+  // Так как сетка уже построена с шагом 1200 (stepY), 
+  // нам не нужно делить на 2. Мы просто перемножаем ячейки.
+  tilesCount = lay.bcL * lay.bcW;
+} else {
+  // Для 600х600 тоже просто перемножаем
+  tilesCount = lay.bcL * lay.bcW;
+}
   } else {
     // Обычный каркас: шаг 1200 (мы уже сжали сетку). Плита 1200x600 ложится поперек.
     if (isVerticalGrid) {
