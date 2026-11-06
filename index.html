@@ -847,18 +847,24 @@ if(!standardMode && !isFrameRigid){
 const nMainPieces = lay.sum3600Length>0 ? Math.ceil(lay.sum3600Length/MAIN_LENGTH) : 0;
 let tilesCount;
 if (tile1200Chk.checked) {
-  // Так как мы уже сжали сетку (stepY = 1200 при обычном каркасе), 
-  // плита 1200х600 занимает 2 ячейки по X и 1 по Y.
-  // При повороте сетки на 90 градусов оси меняются местами.
   const isVerticalGrid = (totalRot % 180 !== 0);
   
-  if (isVerticalGrid) {
-    tilesCount = lay.bcL * Math.ceil(lay.bcW / 2);
+  if (frameRigidChk.checked) {
+    // Жесткий каркас: шаг 600. Плита 1200x600 ложится вдоль несущих.
+    if (isVerticalGrid) {
+       tilesCount = lay.bcL * Math.ceil(lay.bcW / 2);
+    } else {
+       tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
+    }
   } else {
-    tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
+    // Обычный каркас: шаг 1200 (мы уже сжали сетку). Плита 1200x600 ложится поперек.
+    if (isVerticalGrid) {
+       tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
+    } else {
+       tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW; 
+    }
   }
 } else {
-  // Для 600х600 всегда просто перемножаем
   tilesCount = lay.bcL * lay.bcW;
 }
 
