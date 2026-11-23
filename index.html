@@ -279,6 +279,20 @@ const WALL_TOL=1,MIN_VISIBLE=0.5;
 const CUBICA_RED='#c00000',CUBICA_RED_RGB=[192,0,0];
 
 const KP_URL='https://6471811-source.github.io/Cubica-i5/';
+
+/* ===== Роли → позиции 1С (настраиваются в журнале: «Справочник → Роли Армстронга») ===== */
+var ARM_ROLES = { map: {} };
+function armCJ(){ const C = window.CubicaJournal; return (C && typeof C.roleByLabel === 'function') ? C : null; }
+function armRoleOf(label){ const C = armCJ(); return C ? C.roleByLabel('armstrong', label) : null; }
+function armBinding(label){ const k = armRoleOf(label); return k ? (ARM_ROLES.map[k] || null) : null; }
+function armShownLabel(label){ const b = armBinding(label); return b && b.name ? b.name : label; }
+function armReloadRoles(){ const C = armCJ(); if(!C) return; ARM_ROLES.map = C.rolesMap() || {}; try{ if(typeof renderSpec === 'function') renderSpec(); }catch(e){} }
+(function(){
+  const C = armCJ(); if(!C) return;
+  ARM_ROLES.map = C.rolesMap() || {};
+  if(C.isApi()) C.catalogSync().then(armReloadRoles).catch(()=>{});
+  if(C.on) C.on('catalog-changed', armReloadRoles);
+})();
 const SHORT_URL='https://cubica-kp-15ab.6471811.workers.dev';
 
 const urlParams = new URLSearchParams(location.search);
@@ -489,7 +503,7 @@ function renderSpecToCanvas(specRows, widthPx){
     }
     ctx0.font = FONT_NORMAL;
     const maxLabelW = widthPx - padX * 2 - valueGap - 200;
-    const wrapped = wrapText(ctx0, '• ' + row.label, maxLabelW);
+    const wrapped = wrapText(ctx0, '• ' + armShownLabel(row.label), maxLabelW);
     for (let i = 0; i < wrapped.length; i++) {
       lines.push({
         type: 'bullet',
@@ -1403,7 +1417,9 @@ if(!source||!source.length){resultsDiv.innerHTML='<p style="color:#999;font-size
 let html='<ul>';
 for(const row of source){
 const c=row.color?'<span class="cl" style="background:'+row.color+'"></span>':'';
-html+='<li>'+c+'<span class="lb">'+row.label+'</span><span class="vl">'+row.value+'</span></li>';
+const shown=row.kind==='area'?row.label:armShownLabel(row.label);
+const bound=row.kind!=='area'&&armRoleOf(row.label)&&!armBinding(row.label);
+html+='<li>'+c+'<span class="lb"'+(shown!==row.label?' title="Роль: '+row.label+'"':'')+'>'+shown+(bound?' <span style="color:#b26a00;font-size:10px" title="Роль не привязана к позиции 1С — привяжите в журнале: Справочник → Роли Армстронга">· не привязано</span>':'')+'</span><span class="vl">'+row.value+'</span></li>';
 }
 html+='</ul>';
 if(specMode==='current'&&currentLayout&&currentLayout.warnings&&currentLayout.warnings.length){
@@ -1620,13 +1636,18 @@ async function openKpPageViaWorker(){
       if (!r || r.kind === 'area') continue;
       const qty = Number(r.num) || 0;
       if (qty <= 0) continue;
-      finalRows.push({
-        label: String(r.label || ''),
-        qtyCalc: qty,
-        qtyReserve: 0,
-        unit: r.unit || 'шт.',
-        price: 0
-      });
+      const role = armRoleOf(r.label);
+      if (role && armCJ() && armCJ().roleRow) {
+        finalRows.push(armCJ().roleRow(role, qty, String(r.label || ''), ARM_ROLES.map));
+      } else {
+        finalRows.push({
+          label: String(r.label || ''),
+          qtyCalc: qty,
+          qtyReserve: 0,
+          unit: r.unit || 'шт.',
+          price: 0
+        });
+      }
     }
 
     // 2. Проверяем, что-то собрали?
@@ -1653,7 +1674,7 @@ async function openKpPageViaWorker(){
       hangerHeight: Number(p.hangerHeight) || 0,
       polygon: p.polygon || null,
       rows: (p.specRows || []).filter(r => r && r.kind !== 'area' && (Number(r.num) || 0) > 0)
-        .map(r => ({ label: r.label, qty: Number(r.num) || 0, unit: r.unit || 'шт.' }))
+        .map(r => { const role = armRoleOf(r.label); const o = { label: armShownLabel(r.label), qty: Number(r.num) || 0, unit: r.unit || 'шт.' }; if (role) o.role = role; return o; })
     });
     const roomsForKp = project.length > 0 ? project.map(roomToKp) : [roomToKp({
       name: 'Помещение 1',
@@ -1663,12 +1684,24 @@ async function openKpPageViaWorker(){
       tile1200: !!currentLayout.tile1200, tileSize: currentLayout.tile1200 ? '1200x600' : '600x600',
       frameRigid: !!currentLayout.frameRigid, polygon: currentLayout.polygon || null };
     // сохраняем цену и резерв для позиций, которые уже были в записи журнала
+    // сопоставление по роли (или по названию для строк без роли)
     const mergeRows = (oldRows) => {
       const oldMap = {};
-      (Array.isArray(oldRows) ? oldRows : []).forEach(o => { if (o && o.label) oldMap[o.label] = o; });
+      (Array.isArray(oldRows) ? oldRows : []).forEach(o => { if (o && (o.role || o.label)) oldMap[o.role || o.label] = o; });
+      const C = armCJ();
       return finalRows.map(r => {
-        const o = oldMap[r.label];
-        return o ? { ...r, price: Number(o.price) || 0, qtyReserve: Number(o.qtyReserve) || 0 } : r;
+        const o = oldMap[r.role || r.label];
+        if (!o) return r;
+        let n = { ...r, price: Number(o.price) || 0, qtyReserve: Number(o.qtyReserve) || 0 };
+        if (o.resManual) n.resManual = true;
+        if (o.packOn === false) n.packOn = false;
+        // позицию заменили в счёте через 📁 — оставляем замену, пересчитываем количество
+        if (C && r.role && o.nomId && o.nomId !== r.nomId) {
+          const def = C.roleDef(r.role) || {};
+          n.label = o.label; n.unit = o.unit; n.nomId = o.nomId;
+          n.qtyCalc = C.convertQty(r.calcQty, r.calcUnit || 'шт', o.unit, { m2PerPiece: C.m2For(o.nomId, o.label, def), lenM: def.lenM });
+        }
+        return n;
       });
     };
 
