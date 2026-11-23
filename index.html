@@ -601,8 +601,14 @@ const stepY = TILE_CELL;
 const bcL = Math.ceil(L / TILE_CELL);
 const bcW = Math.ceil(W / stepY);
 
-const xS=-(bcL*TILE_CELL-L)/2+offsetX;
-const yS=-(bcW*stepY-W)/2+offsetY;
+// Центровка сетки. Для 600х600 — по шагу 600.
+// Для 1200х600 — по шагу 1200 в направлении, где плита имеет длину 1200,
+// чтобы подрезка у противоположных стен была одинаковой.
+const _t1200=!!tile1200Chk.checked, _rigid=!!frameRigidChk.checked;
+let xS=-(bcL*TILE_CELL-L)/2+offsetX;
+let yS=-(bcW*stepY-W)/2+offsetY;
+if(_t1200 && !_rigid){ yS=-(Math.ceil(W/1200)*1200-W)/2+offsetY; }
+if(_t1200 && _rigid){ xS=-(Math.ceil(L/1200)*1200-L)/2+offsetX; }
 const yWallTop=W/2-hy,yWallBot=W/2+hy;
 const xWallMin=L/2-hx,xWallMax=L/2+hx;
 const jMin=Math.floor((xWallMin-xS)/TILE_CELL)-1;
