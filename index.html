@@ -917,7 +917,7 @@ const specRows=[
 {label:`Плита потолочная ${tileName}х12 мм`,value:tilesCount+' шт.',num:tilesCount,kind:'count',unit:'шт.'},
 {label:'Т-профиль 24х33х3600 Премиум белый',value:nMainPieces+' шт.',num:nMainPieces,kind:'count',color:'#d32f2f',unit:'шт.'},
 ];
-if (!isTile1200 || lay.n1200>0) {
+if (lay.n1200>0) {
   specRows.push({label:'Т-профиль 24х26х1200 белый',value:lay.n1200+' шт.',num:lay.n1200,kind:'count',color:'#1976d2',unit:'шт.'});
 }
 
@@ -982,7 +982,7 @@ if(isTile1200){
   if(isFinite(lay.minEdgeStrip) && lay.minEdgeStrip<150)
     warnings.push('⚠ Узкая подрезка плиты у стены — '+Math.round(lay.minEdgeStrip)+' мм. Рекомендуется сдвинуть раскладку (↑ ↓).');
 }
-else if(isFrameRigid) warnings.push('🔧 Жесткий каркас: несущие 3600 на каждой линии (без 600-х профилей в пролетах).');
+else if(isFrameRigid) warnings.push('🔧 Жесткий каркас: несущие 3600 через 600 мм на каждой линии, между ними поперечные 600 через 600 мм (профиль 1200 не нужен).');
 else if(standardMode) warnings.push('📐 Расчёт по техкарте 132-06 ТК: несущие на нечётных линиях сетки. Направляющих 3600 — '+n3600Normal+' шт.');
 else if(ilyutikApplied) warnings.push('📐 Оптимизация: несущие на чётных линиях сетки. Направляющих 3600 — '+lay.n3600+' шт. (вместо '+n3600Normal+').');
 else warnings.push('📐 Оптимизация: перестановка не даёт выигрыша — обычное положение ('+n3600Normal+' шт.).');
