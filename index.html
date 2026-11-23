@@ -613,30 +613,28 @@ const vX=[];for(let j=jMin;j<=jMax;j++) vX.push(xS+j*TILE_CELL);
 let beams=[],tea600Y=[];
 const isTile1200 = !!tile1200Chk.checked;
 const isRigid = !!frameRigidChk.checked;
+// Режим плиты 1200х600:
+//  'across' — обычный: несущие 3600 через 1200, поперечные 1200 через 600,
+//             плита ложится длинной стороной 1200 ПОПЕРЁК несущих (между ними). 600-х профилей нет.
+//  'along'  — жесткий каркас: несущие 3600 через 600, поперечные 600 через 1200,
+//             плита ложится длинной стороной 1200 ВДОЛЬ несущих.
+const tileMode = isTile1200 ? (isRigid ? 'along' : 'across') : '600';
 
 for(let k=kMin;k<=kMax;k++){
   const y = yS + k * stepY;
-  if (isTile1200) {
-    // Для 1200х600 3600-е всегда идут с шагом 1200 (или 600 при жестком)
-    if (isRigid) {
-      beams.push(y);
-    } else {
-      const m=((k%2)+2)%2;
-      if (m === 0) beams.push(y); // несущие через одну линию
-    }
+  const m=((k%2)+2)%2;
+  let isBeam;
+  if(isRigid){
+    isBeam = true;
+  } else if(isTile1200 && standardMode){
+    isBeam = m===1; // техкарта: несущие на нечётных линиях, без перестановки
   } else {
-    const m=((k%2)+2)%2;
-    let isBeam;
-    if(isRigid){
-      isBeam = true; 
-    } else {
-      isBeam = phase===1 ? m===0 : m===1;
-    }
-    if(isBeam) beams.push(y); else tea600Y.push(y);
+    isBeam = phase===1 ? m===0 : m===1;
   }
+  if(isBeam) beams.push(y); else if(!isTile1200) tea600Y.push(y);
 }
 
-// Техкарта отключена для 1200х600
+// Техкарта (доборные несущие у стен) — только для 600х600
 if (standardMode && !isTile1200) {
   let allLines = [...beams, ...tea600Y]
     .filter(y => y > yWallTop + 1 && y < yWallBot - 1)
@@ -660,7 +658,7 @@ if (standardMode && !isTile1200) {
   tea600Y.sort((a, b) => a - b);
 }
 
-if (tile1200Chk.checked) {
+if (isTile1200) {
   tea600Y = []; 
 }
 
@@ -696,7 +694,7 @@ return onWallByPoints(dx1,dy1,dx2,dy2);
 }
 const items=[];
 for(const yb of beams) items.push({type:3600,x:(xLineMin+xLineMax)/2,y:yb,len:xLineMax-xLineMin,ori:'h'});
-if(!tile1200Chk.checked){
+if(!isTile1200){
   for(const yt of tea600Y){
     for(let j=0;j<vX.length-1;j++){
       const len=vX[j+1]-vX[j];if(len<=0.5) continue;
@@ -708,14 +706,69 @@ let warnWide=false;
 for(const band of bands){
 const h=band.y1-band.y0,yMid=(band.y0+band.y1)/2;
 let type;
-if(tile1200Chk.checked){
+if(tileMode==='across'){
   type=1200;
-  if(h>1200 && band.isEdge) warnWide=true;
+  if(h>1200+0.5 && band.isEdge) warnWide=true;
+} else if(tileMode==='along'){
+  type=600;
+  if(h>600+0.5 && band.isEdge) warnWide=true;
 } else {
   if(h<=600) type=600; else if(h<=1200) type=1200;
   else{type=1200;if(band.isEdge)warnWide=true;}
 }
-for(const xv of vX) items.push({type,x:xv,y:yMid,len:h,ori:'v'});
+for(let jj=0;jj<vX.length;jj++){
+  const j=jMin+jj;
+  // В режиме 'along' поперечные 600 стоят только на стыках плит (через 1200)
+  if(tileMode==='along' && (((j%2)+2)%2)!==0) continue;
+  items.push({type,x:vX[jj],y:yMid,len:h,ori:'v'});
+}
+}
+
+// ===== ПЛИТЫ (ячейки) в координатах сетки =====
+const tiles=[];
+if(tileMode==='600'){
+  for(let k=kMin;k<=kMax;k++) for(let j=jMin;j<=jMax;j++)
+    tiles.push({x0:xS+j*TILE_CELL,y0:yS+k*TILE_CELL,w:TILE_CELL,h:TILE_CELL});
+} else {
+  // ряды плит — между соседними несущими (+ по одному ряду за крайними несущими)
+  const bl=beams.slice().sort((a,b)=>a-b);
+  const pitch = tileMode==='across' ? 1200 : 600;
+  if(bl.length){ bl.unshift(bl[0]-pitch); bl.push(bl[bl.length-1]+pitch); }
+  for(let r=0;r<bl.length-1;r++){
+    const y0=bl[r],hh=bl[r+1]-bl[r];
+    if(hh<=0.5) continue;
+    if(tileMode==='across'){
+      for(let j=jMin;j<=jMax;j++) tiles.push({x0:xS+j*TILE_CELL,y0,w:TILE_CELL,h:hh});
+    } else {
+      const j0 = (((jMin%2)+2)%2)===0 ? jMin : jMin-1;
+      for(let j=j0;j<=jMax;j+=2) tiles.push({x0:xS+j*TILE_CELL,y0,w:2*TILE_CELL,h:hh});
+    }
+  }
+}
+// Проверка «точка внутри помещения» (в координатах сетки)
+function insideRoom(xw,yw){
+  const [dx,dy]=toDisplay(xw,yw);
+  if(poly) return pointInPoly(poly,dx,dy);
+  return dx>=0&&dx<=L_in&&dy>=0&&dy<=W_in;
+}
+// Подсчёт плит 1200х600 с учётом подрезки: кусок ≤ половины плиты — из одной плиты выходит 2 куска
+let tiles1200Count=0, minEdgeStrip=Infinity;
+if(isTile1200){
+  let sum=0;
+  const NX=tileMode==='across'?6:12, NY=tileMode==='across'?12:6;
+  for(const tl of tiles){
+    let inside=0;
+    for(let a=0;a<NX;a++) for(let b=0;b<NY;b++){
+      if(insideRoom(tl.x0+(a+0.5)*tl.w/NX, tl.y0+(b+0.5)*tl.h/NY)) inside++;
+    }
+    if(!inside) continue;
+    const f=inside/(NX*NY);
+    tl.frac=f;
+    sum += f<=0.5+1e-9 ? 0.5 : 1;
+  }
+  tiles1200Count=Math.ceil(sum-1e-9);
+  // самая узкая полоса подрезки у стены (между стеной и крайней несущей)
+  for(const band of bands){ if(band.isEdge){ const h=band.y1-band.y0; if(h<minEdgeStrip) minEdgeStrip=h; } }
 }
 let excludedOnWall=0;
 for(let i=items.length-1;i>=0;i--) if(itemOnWall(items[i])){items.splice(i,1);excludedOnWall++;}
@@ -776,7 +829,8 @@ onWall=onWallByPoints(dx1,dy1,dx2,dy2);
 if(onWall) continue;
 beamsInRoom.push(yb);
 }
-return {phase,bcL,bcW,xS,yS,jMin,jMax,kMin,kMax,vX,beams,tea600Y,bands,items,
+return {phase,bcL,bcW,xS,yS,jMin,jMax,kMin,kMax,vX,beams,tea600Y,bands,items,tiles,tileMode,
+tiles1200Count,minEdgeStrip,
 n3600,n1200,n600,n600Side,beamsInRoom,warnWide,sum3600Length,excludedOnWall,clipItem};
 }
 
@@ -824,14 +878,10 @@ if(!standardMode && !isFrameRigid){
 
 const nMainPieces = lay.sum3600Length>0 ? Math.ceil(lay.sum3600Length/MAIN_LENGTH) : 0;
 let tilesCount;
-if (tile1200Chk.checked) {
-  // По длине (X) плита занимает 2 ячейки по 600. По ширине (Y) 1 ячейку.
-  const isVerticalGrid = (totalRot % 180 !== 0);
-  if (isVerticalGrid) {
-    tilesCount = lay.bcL * Math.ceil(lay.bcW / 2);
-  } else {
-    tilesCount = Math.ceil(lay.bcL / 2) * lay.bcW;
-  }
+if (isTile1200) {
+  // Реальный подсчёт по раскладке: каждая плита 1200х600, попавшая в помещение;
+  // подрезанные куски ≤ половины плиты считаются по 0,5 (из одной плиты 2 куска)
+  tilesCount = lay.tiles1200Count;
 } else {
   tilesCount = lay.bcL * lay.bcW;
 }
@@ -860,10 +910,12 @@ const specRows=[
 {label:'Площадь',value:areaM2.toFixed(2)+' м²',num:areaM2,kind:'area'},
 {label:`Плита потолочная ${tileName}х12 мм`,value:tilesCount+' шт.',num:tilesCount,kind:'count',unit:'шт.'},
 {label:'Т-профиль 24х33х3600 Премиум белый',value:nMainPieces+' шт.',num:nMainPieces,kind:'count',color:'#d32f2f',unit:'шт.'},
-{label:'Т-профиль 24х26х1200 белый',value:lay.n1200+' шт.',num:lay.n1200,kind:'count',color:'#1976d2',unit:'шт.'},
 ];
+if (!isTile1200 || lay.n1200>0) {
+  specRows.push({label:'Т-профиль 24х26х1200 белый',value:lay.n1200+' шт.',num:lay.n1200,kind:'count',color:'#1976d2',unit:'шт.'});
+}
 
-if (!isTile1200) {
+if (!isTile1200 || lay.n600>0) {
   specRows.push({label:'Т-профиль 24х20х600 Стандарт белый',value:lay.n600+' шт.',num:lay.n600,kind:'count',color:'#43a047',unit:'шт.'});
 }
 
@@ -909,10 +961,22 @@ specRows.push({label:'Дюбель-гвоздь SM-G 6x40 (3600/200шт.)',value
 
 const warnings=[];
 if(lay.n3600<1) warnings.push('⚠ Ни одной несущей — увеличьте ширину помещения или сдвиньте раскладку.');
-if(lay.warnWide) warnings.push('⚠ Полоса у стены > 1200 мм — рекомендуется промежуточная несущая.');
+if(lay.warnWide) warnings.push(lay.tileMode==='along' ? '⚠ Полоса у стены > 600 мм — рекомендуется промежуточная несущая.' : '⚠ Полоса у стены > 1200 мм — рекомендуется промежуточная несущая.');
 if(rotationDeg!==0) warnings.push('⚠ При повороте раскладки количество элементов ориентировочное.');
 if(roomPolygon) warnings.push('✏️ Помещение начерчено: '+roomPolygon.length+' сторон. Площадь '+areaM2.toFixed(2)+' м².');
-if(isFrameRigid) warnings.push('🔧 Жесткий каркас: несущие 3600 на каждой линии (без 600-х профилей в пролетах).');
+if(isTile1200){
+  if(isFrameRigid){
+    warnings.push('🔧 Плита 1200×600 + жесткий каркас: несущие 3600 через 600 мм, поперечные 600 через 1200 мм, плита ложится вдоль несущих.');
+  } else {
+    warnings.push('🟦 Плита 1200×600: несущие 3600 через 1200 мм, поперечные 1200 через 600 мм, профиль 600 не нужен.');
+    if(standardMode) warnings.push('📐 Расчёт по техкарте 132-06 ТК: несущие на нечётных линиях сетки. Направляющих 3600 — '+n3600Normal+' шт.');
+    else if(ilyutikApplied) warnings.push('📐 Оптимизация: несущие сдвинуты на 600 мм. Направляющих 3600 — '+lay.n3600+' шт. (вместо '+n3600Normal+').');
+    else warnings.push('📐 Оптимизация: перестановка не даёт выигрыша — обычное положение ('+n3600Normal+' шт.).');
+  }
+  if(isFinite(lay.minEdgeStrip) && lay.minEdgeStrip<150)
+    warnings.push('⚠ Узкая подрезка плиты у стены — '+Math.round(lay.minEdgeStrip)+' мм. Рекомендуется сдвинуть раскладку (↑ ↓).');
+}
+else if(isFrameRigid) warnings.push('🔧 Жесткий каркас: несущие 3600 на каждой линии (без 600-х профилей в пролетах).');
 else if(standardMode) warnings.push('📐 Расчёт по техкарте 132-06 ТК: несущие на нечётных линиях сетки. Направляющих 3600 — '+n3600Normal+' шт.');
 else if(ilyutikApplied) warnings.push('📐 Оптимизация: несущие на чётных линиях сетки. Направляющих 3600 — '+lay.n3600+' шт. (вместо '+n3600Normal+').');
 else warnings.push('📐 Оптимизация: перестановка не даёт выигрыша — обычное положение ('+n3600Normal+' шт.).');
@@ -920,7 +984,8 @@ else warnings.push('📐 Оптимизация: перестановка не �
 currentLayout={L,W,L_in,W_in,rotationDeg,rotated90,totalRot,lay,positionsX,
 nMainPieces,tilesCount,totalHangers,wallAnglePieces,angleFasteners,perimeter,areaM2,
 specRows,warnings,standardMode,ilyutikApplied,n3600Normal,n3600Alternative,
-tile1200: isTile1200, frameRigid: isFrameRigid,
+tile1200: isTile1200, frameRigid: isFrameRigid, tileMode: lay.tileMode,
+hangers: isHangers, hangerHeight: hangerHeight,
 polygon:roomPolygon?roomPolygon.map(p=>[p[0],p[1]]):null};
 
 renderSpec();
@@ -962,26 +1027,10 @@ svg+='<rect x="'+ox+'" y="'+oy+'" width="'+drawWidth+'" height="'+drawHeight+'" 
 
 svg+='<g clip-path="url(#ac-room-clip)"><g transform="translate('+roomCx+' '+roomCy+') rotate('+totalRot+') translate('+(-gridCx)+' '+(-gridCy)+')">';
 const gap=(TILE_CELL-TILE_PANEL)/2;
-for(let k=kMin;k<=kMax;k++) {
-  for(let j=jMin;j<=jMax;j++){
-    const cx=xS+j*TILE_CELL+gap;
-    const cy=yS+k*TILE_CELL+gap;
-    
-    let pW = TILE_PANEL;
-    let pH = TILE_PANEL;
-    let skip = false;
-    
-    if (tile1200) {
-      // Плита 1200х600 ложится длинной стороной 1200 поперек 3600.
-      // Значит, склеиваем 2 ячейки по X.
-      pW = TILE_PANEL * 2;
-      if (j % 2 !== 0) skip = true; 
-    }
-    
-    if (skip) continue;
-    
-    svg+='<rect x="'+(cx*s)+'" y="'+(cy*s)+'" width="'+(pW*s)+'" height="'+(pH*s)+'" fill="#fbfbfb" stroke="#e2e2e2" stroke-width="0.6"/>';
-  }
+for(const tl of lay.tiles){
+  const tw=tl.w-2*gap, th=tl.h-2*gap;
+  if(tw<=0||th<=0) continue;
+  svg+='<rect x="'+((tl.x0+gap)*s)+'" y="'+((tl.y0+gap)*s)+'" width="'+(tw*s)+'" height="'+(th*s)+'" fill="#fbfbfb" stroke="#e2e2e2" stroke-width="0.6"/>';
 }
 for(const it of items){
 let col,sw;
@@ -1124,44 +1173,45 @@ threeCeilingMesh.position.set(LmRoom/2,CEIL_OFFSET,WmRoom/2);
 threeCeilingMesh.visible=showCeilingChk.checked;
 threeScene.add(threeCeilingMesh);
 
-const plateGeo=boxGeo(panelM,PLATE_T,panelM);plateGeo.__cached=true;
-const gapM=(TILE_CELL-TILE_PANEL)/2000,plateY=FLANGE_H+PLATE_T/2;
-for(let k=kMin;k<=kMax;k++) {
-  for(let j=jMin;j<=jMax;j++){
-    const xg=(xS+j*TILE_CELL)/1000+gapM+panelM/2;
-    const zg=(yS+k*TILE_CELL)/1000+gapM+panelM/2;
-    let lx, lz;
-    if(polygon){
-      const dxw = xg*1000 - L/2, dyw = zg*1000 - W/2;
-      const dispX = dxw*cosA - dyw*sinA + L_in/2;
-      const dispY = dxw*sinA + dyw*cosA + W_in/2;
-      if(!pointInPoly(polygon, dispX, dispY)) continue;
-      const dxp = dispX/1000 - LmRoom/2;
-      const dzp = dispY/1000 - WmRoom/2;
-      lx = dxp*cosA + dzp*sinA;
-      lz = -dxp*sinA + dzp*cosA;
-    } else {
-      const p=toLoc(xg,zg); lx=p[0]; lz=p[1];
+const gapMM=(TILE_CELL-TILE_PANEL)/2,plateY=FLANGE_H+PLATE_T/2;
+const plateTitle=tile1200?'1200 × 600 × 12 мм':'600 × 600 × 12 мм';
+for(const tl of lay.tiles){
+  const tw=tl.w-2*gapMM, th=tl.h-2*gapMM;
+  if(tw<=0||th<=0) continue;
+  const cxmm=tl.x0+tl.w/2, cymm=tl.y0+tl.h/2;
+  let lx, lz;
+  if(polygon){
+    // для 1200х600 проверяем центр и обе половины плиты
+    const probes=[[cxmm,cymm]];
+    if(tile1200){
+      if(tl.w>tl.h){probes.push([cxmm-tl.w/4,cymm],[cxmm+tl.w/4,cymm]);}
+      else{probes.push([cxmm,cymm-tl.h/4],[cxmm,cymm+tl.h/4]);}
     }
-    
-    // Логика склейки плит 1200х600
-    if (tile1200) {
-      // Склеиваем 2 ячейки по X, пропускаем нечетные
-      if (j % 2 !== 0) continue; 
+    let ok=false;
+    for(const [px,py] of probes){
+      const dxw=px-L/2, dyw=py-W/2;
+      const dX=dxw*cosA-dyw*sinA+L_in/2, dY=dxw*sinA+dyw*cosA+W_in/2;
+      if(pointInPoly(polygon,dX,dY)){ok=true;break;}
     }
-    
-    const plateW = tile1200 ? (panelM * 2) : panelM;
-    const plateD = panelM; // По глубине всегда 600
-    
-    const pGeo = boxGeo(plateW, PLATE_T, plateD);
-    pGeo.__cached = true;
-    const mesh=new THREE.Mesh(pGeo,mPlate);
-    mesh.position.set(lx,plateY,lz);
-    mesh.userData={title:'Плита Cubica',size:tile1200 ? '1200 × 600 × 12 мм' : '600 × 600 × 12 мм',qty:'—',spacing:'ячейка 600×600 мм'};
-    threeTilesGroup.add(mesh);
+    if(!ok) continue;
+    const dxw = cxmm - L/2, dyw = cymm - W/2;
+    const dispX = dxw*cosA - dyw*sinA + L_in/2;
+    const dispY = dxw*sinA + dyw*cosA + W_in/2;
+    const dxp = dispX/1000 - LmRoom/2;
+    const dzp = dispY/1000 - WmRoom/2;
+    lx = dxp*cosA + dzp*sinA;
+    lz = -dxp*sinA + dzp*cosA;
+  } else {
+    const p=toLoc(cxmm/1000,cymm/1000); lx=p[0]; lz=p[1];
   }
+  const pGeo = boxGeo(tw/1000, PLATE_T, th/1000);
+  pGeo.__cached = true;
+  const mesh=new THREE.Mesh(pGeo,mPlate);
+  mesh.position.set(lx,plateY,lz);
+  mesh.userData={title:'Плита Cubica',size:plateTitle,qty:'—',spacing:tile1200?'ячейка 1200×600 мм':'ячейка 600×600 мм'};
+  threeTilesGroup.add(mesh);
 }
-const ud3600={title:'Направляющая 3600',size:MAIN_LENGTH+' × 24 × 30 мм',qty:'—',spacing:'шаг 1200 мм между осями'};
+const ud3600={title:'Направляющая 3600',size:MAIN_LENGTH+' × 24 × 30 мм',qty:'—',spacing:(lay.tileMode==='along'||frameRigid)?'шаг 600 мм между осями':'шаг 1200 мм между осями'};
 const ud1200={title:'Направляющая 1200',size:'1200 × 24 × 25 мм',qty:'—',spacing:'между парами несущих'};
 const ud600 ={title:'Направляющая 600',size:'600 × 24 × 25 мм',qty:'—',spacing:'в полосе 1200 / пристенная'};
 for(const it of items){
@@ -1309,22 +1359,35 @@ rotationDeg:parseFloat(rotationSlider.value),rotated90:rotated90,
 standardMode:standardMode,
 tile1200:!!tile1200Chk.checked,
 frameRigid:!!frameRigidChk.checked,
+hangers:!!hangersChk.checked,
+hangerHeight:parseFloat(hangerHInput.value)||0,
+areaM2:currentLayout.areaM2,
 polygon:roomPolygon?roomPolygon.map(p=>[p[0],p[1]]):null,
 specRows:currentLayout.specRows.map(r=>({...r}))
 };
 }
+// Итог по проекту: суммируем по НАЗВАНИЮ позиции (а не по номеру строки),
+// т.к. у помещений 600х600 и 1200х600 разный набор строк
 function computeTotals(){
 if(!project.length) return [];
-const template=project[0].specRows;
-return template.map((row,idx)=>{
-let num=0;
-for(const room of project){const r=room.specRows[idx];if(r&&typeof r.num==='number') num+=r.num;}
-let value;
-if(row.kind==='area') value=num.toFixed(2)+' м²';
-else if(row.kind==='approx') value='≈ '+Math.round(num)+' шт.';
-else value=Math.round(num)+' шт.';
-return {label:row.label,value:value,color:row.color,unit:row.unit||'шт.'};
-});
+let area=0;const map={},order=[];
+for(const room of project){
+  for(const r of (room.specRows||[])){
+    if(!r) continue;
+    if(r.kind==='area'){area+=Number(r.num)||0;continue;}
+    if(!map[r.label]){map[r.label]={label:r.label,num:0,kind:r.kind,color:r.color,unit:r.unit||'шт.'};order.push(r.label);}
+    map[r.label].num+=Number(r.num)||0;
+    if(r.kind==='approx') map[r.label].kind='approx';
+  }
+}
+const out=[{label:'Площадь',value:area.toFixed(2)+' м²',num:area,kind:'area'}];
+const prio=l=>/^Плита/.test(l)?0:/3600/.test(l)&&/^Т-профиль/.test(l)?1:/1200/.test(l)&&/^Т-профиль/.test(l)?2:/^Т-профиль/.test(l)?3:9;
+order.sort((a,b)=>prio(a)-prio(b)); // стабильная сортировка: остальное — в порядке спецификации
+for(const k of order){
+  const r=map[k];const n=Math.round(r.num);
+  out.push({label:r.label,value:(r.kind==='approx'?'≈ ':'')+n+' '+(r.unit||'шт.'),num:n,kind:r.kind,color:r.color,unit:r.unit||'шт.'});
+}
+return out;
 }
 function renderSpec(){
 let source;
@@ -1388,8 +1451,16 @@ rotated90=!!r.rotated90;rotate90Btn.classList.toggle('active',rotated90);
 standardMode=!!r.standardMode;standardBtn.classList.toggle('active',standardMode);
 tile1200Chk.checked=!!r.tile1200;
 frameRigidChk.checked=!!r.frameRigid;
+if(r.hangers!==undefined) hangersChk.checked=!!r.hangers;
+if(r.hangerHeight!==undefined) hangerHInput.value=r.hangerHeight;
+syncHangerUI();
 roomPolygon=r.polygon?r.polygon.map(p=>[p[0],p[1]]):null;
 updateLabels();calculate();
+// помещение загружено из журнала без спецификации — заполняем её расчётом
+if(currentLayout && (!r.specRows || !r.specRows.length)){
+  r.specRows=currentLayout.specRows.map(x=>({...x}));
+  r.areaM2=currentLayout.areaM2;
+}
 specMode='current';
 specToggleEl.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.specmode==='current'));
 renderProjectList();renderSpec();
@@ -1536,21 +1607,20 @@ async function openKpPageViaWorker(){
   btn.disabled = true;
 
   try {
-    // 1. Собираем строки напрямую с экрана (из currentLayout)
+    // 1. Строки: итог по проекту (все помещения) или текущее помещение
+    const totals = project.length > 0 ? computeTotals() : (currentLayout ? currentLayout.specRows : []);
     const finalRows = [];
-    if (currentLayout && currentLayout.specRows) {
-      for (const r of currentLayout.specRows) {
-        if (!r || r.kind === 'area') continue;
-        const qty = Number(r.num) || 0;
-        if (qty <= 0) continue;
-        finalRows.push({
-          label: String(r.label || ''),
-          qtyCalc: qty,
-          qtyReserve: 0,
-          unit: r.unit || 'шт.',
-          price: 0
-        });
-      }
+    for (const r of totals) {
+      if (!r || r.kind === 'area') continue;
+      const qty = Number(r.num) || 0;
+      if (qty <= 0) continue;
+      finalRows.push({
+        label: String(r.label || ''),
+        qtyCalc: qty,
+        qtyReserve: 0,
+        unit: r.unit || 'шт.',
+        price: 0
+      });
     }
 
     // 2. Проверяем, что-то собрали?
@@ -1559,31 +1629,53 @@ async function openKpPageViaWorker(){
       return;
     }
 
-    // 3. Формируем комнаты для КП
-    const roomsForKp = project.length > 0 ? project.map(p => {
-      return {
-        name: p.name,
-        L_in: p.L_in,
-        W_in: p.W_in,
-        areaM2: p.areaM2 || 0,
-        rows: p.specRows.filter(r => r.kind !== 'area').map(r => ({ label: r.label, qty: r.num, unit: r.unit }))
-      };
-    }) : [{
-      name: 'Помещение',
-      L_in: currentLayout.L_in,
-      W_in: currentLayout.W_in,
-      areaM2: currentLayout.areaM2,
-      rows: finalRows.map(r => ({ label: r.label, qty: r.qtyCalc, unit: r.unit }))
-    }];
+    // 3. Формируем комнаты для КП (со всеми параметрами, чтобы их можно было восстановить)
+    const roomToKp = (p, i) => ({
+      name: p.name || ('Помещение ' + (i + 1)),
+      L_in: p.L_in,
+      W_in: p.W_in,
+      areaM2: p.areaM2 || 0,
+      offsetX: Number(p.offsetX) || 0,
+      offsetY: Number(p.offsetY) || 0,
+      rotation: Number(p.rotationDeg) || 0,
+      rotate90: !!p.rotated90,
+      standardMode: !!p.standardMode,
+      tile1200: !!p.tile1200,
+      tileSize: p.tile1200 ? '1200x600' : '600x600',
+      frameRigid: !!p.frameRigid,
+      hangers: p.hangers !== undefined ? !!p.hangers : true,
+      hangerHeight: Number(p.hangerHeight) || 0,
+      polygon: p.polygon || null,
+      rows: (p.specRows || []).filter(r => r && r.kind !== 'area' && (Number(r.num) || 0) > 0)
+        .map(r => ({ label: r.label, qty: Number(r.num) || 0, unit: r.unit || 'шт.' }))
+    });
+    const roomsForKp = project.length > 0 ? project.map(roomToKp) : [roomToKp({
+      name: 'Помещение 1',
+      ...snapshotRoom()
+    }, 0)];
+    const metaForKp = { L_in: currentLayout.L_in, W_in: currentLayout.W_in, area: currentLayout.areaM2,
+      tile1200: !!currentLayout.tile1200, tileSize: currentLayout.tile1200 ? '1200x600' : '600x600',
+      frameRigid: !!currentLayout.frameRigid, polygon: currentLayout.polygon || null };
+    // сохраняем цену и резерв для позиций, которые уже были в записи журнала
+    const mergeRows = (oldRows) => {
+      const oldMap = {};
+      (Array.isArray(oldRows) ? oldRows : []).forEach(o => { if (o && o.label) oldMap[o.label] = o; });
+      return finalRows.map(r => {
+        const o = oldMap[r.label];
+        return o ? { ...r, price: Number(o.price) || 0, qtyReserve: Number(o.qtyReserve) || 0 } : r;
+      });
+    };
 
     // 4. Если есть JID — сохраняем в существующую запись
     if (JID && window.CubicaJournal) {
       const rec = window.CubicaJournal.get(JID);
       if (rec) {
         rec.type = 'armstrong';
-        rec.rows = finalRows;
+        rec.rows = mergeRows(rec.rows);
         rec.rooms = roomsForKp;
-        rec.meta = { L_in: currentLayout.L_in, W_in: currentLayout.W_in, area: currentLayout.areaM2, polygon: currentLayout.polygon || null };
+        rec.meta = metaForKp;
+        rec.history = rec.history || [];
+        try { rec.history.push({ at: window.CubicaJournal.nowISO(), by: window.CubicaJournal.manager(), action: 'from armstrong calculator (full sync)' }); } catch(e) {}
         
         window.CubicaJournal.save(rec, { assignNumber: false });
         
@@ -1603,7 +1695,7 @@ async function openKpPageViaWorker(){
       rec.type = 'armstrong';
       rec.rows = finalRows;
       rec.rooms = roomsForKp;
-      rec.meta = { L_in: currentLayout.L_in, W_in: currentLayout.W_in, area: currentLayout.areaM2, polygon: currentLayout.polygon || null };
+      rec.meta = metaForKp;
       
       window.CubicaJournal.save(rec, { assignNumber: false });
       
@@ -1633,11 +1725,16 @@ if(JID && window.CubicaJournal){
         name: r.name || 'Помещение',
         L_in: Number(r.L_in) || 1000,
         W_in: Number(r.W_in) || 1000,
-        offsetX: 0,
-        offsetY: 0,
+        offsetX: Number(r.offsetX) || 0,
+        offsetY: Number(r.offsetY) || 0,
         rotationDeg: Number(r.rotation) || 0,
         rotated90: !!r.rotate90,
-        standardMode: false,
+        standardMode: !!r.standardMode,
+        tile1200: !!r.tile1200 || r.tileSize === '1200x600',
+        frameRigid: !!r.frameRigid,
+        hangers: r.hangers !== undefined ? !!r.hangers : true,
+        hangerHeight: Number(r.hangerHeight) || 0,
+        areaM2: Number(r.areaM2) || 0,
         polygon: r.polygon || null,
         specRows: [],
       };
@@ -1677,14 +1774,13 @@ resetBtn.addEventListener('click',()=>{
     showToast('↺ Возврат к сохранённому расчёту', '#1565c0');
     return;
   }
-  railWInput.value=30;railHInput.value=30;gapInput.value=20;rotationInput.value=0;
-  updateSliderLabels();updateAdjustLabels();
-  setActiveColor('ral9003');
-  capsChk.checked=false;angleChk.checked=false;hangersChk.checked=false;
-  hangerHInput.value=0;stringerPaintChk.checked=false;
-  syncHangerUI();
-  params.rotate90=false;updateRotate90UI();
-  mergedCutsSet={};mergedResult=null;
+  offsetXSlider.value=0;offsetYSlider.value=0;rotationSlider.value=0;
+  rotated90=false;rotate90Btn.classList.remove('active');
+  standardMode=false;standardBtn.classList.remove('active');
+  tile1200Chk.checked=false;frameRigidChk.checked=false;
+  hangersChk.checked=true;hangerHInput.value=0;
+  roomPolygon=null;
+  syncHangerUI();updateLabels();
   calculate();
   showToast('↺ Сброшено к базовым настройкам', '#1565c0');
 });
