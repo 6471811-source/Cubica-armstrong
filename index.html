@@ -1699,7 +1699,7 @@ async function openKpPageViaWorker(){
         if (C && r.role && o.nomId && o.nomId !== r.nomId) {
           const def = C.roleDef(r.role) || {};
           n.label = o.label; n.unit = o.unit; n.nomId = o.nomId;
-          n.qtyCalc = C.convertQty(r.calcQty, r.calcUnit || 'шт', o.unit, { m2PerPiece: C.m2For(o.nomId, o.label, def), lenM: def.lenM });
+          n.qtyCalc = C.convertQty(r.calcQty, r.calcUnit || 'шт', o.unit, C.unitOpt ? C.unitOpt(o.nomId, o.label, o.unit, def) : { m2PerPiece: C.m2For(o.nomId, o.label, def), lenM: def.lenM });
         }
         return n;
       });
